@@ -1,1 +1,12 @@
-Require all denied
+# ==========================================================================
+# ParkControl · .htaccess (carpeta app)
+# --------------------------------------------------------------------------
+# Permite la previsualización de la UI en desarrollo: index.php, vistas y
+# assets (css/js/img).
+#
+# SEGURIDAD: las credenciales de la base de datos siguen protegidas porque
+# la carpeta app/config/ tiene su propio .htaccess con "Require all denied"
+# (ver app/config/.htaccess). Configuración también está fuera del control
+# de versiones (ver .gitignore de la raíz).
+# ==========================================================================
+Require all granted
