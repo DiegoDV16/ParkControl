@@ -1,0 +1,8 @@
+# ==========================================================================
+# ParkControl · .htaccess (carpeta config)
+# --------------------------------------------------------------------------
+# Bloquea el acceso directo por navegador a esta carpeta.
+# Protege app/config/conexion.php (credenciales de la base de datos).
+# Las credenciales tampoco se suben a git (ver .gitignore de la raíz).
+# ==========================================================================
+Require all denied
