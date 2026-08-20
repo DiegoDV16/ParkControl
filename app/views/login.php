@@ -3,9 +3,14 @@
 require_once __DIR__ . "/../config/conexion.php";
 session_start();
 
-// Si ya hay sesión iniciada, ir directo al panel
+// Destino según el rol: rol 1 (administra) → panel del administrador.
+function pcDestinoSegunRol($rol) {
+    return (int)$rol === 1 ? '../views/Administrador/inicio.php' : '../index.php';
+}
+
+// Si ya hay sesión iniciada, ir directo al panel que corresponde
 if (isset($_SESSION['usuario'])) {
-    header("Location: ../index.php");
+    header("Location: " . pcDestinoSegunRol($_SESSION['usuario']['rol']));
     exit;
 }
 
@@ -44,7 +49,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'correo'  => $usuario['correo'],
                     'rol'     => $usuario['idRol'],
                 ];
-                header("Location: ../index.php");
+                header("Location: " . pcDestinoSegunRol($usuario['idRol']));
                 exit;
             }
         }

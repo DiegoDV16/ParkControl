@@ -12,6 +12,24 @@ if (!function_exists('pcNavActivo')) {
     }
 }
 
+// Datos del usuario en sesión (para avatar, nombre y rol en el sidebar).
+if (!isset($_SESSION)) {
+    session_start();
+}
+$pcUsuario = $_SESSION['usuario'] ?? null;
+$pcNombre  = $pcUsuario['nombres'] ?? 'Usuario';
+$pcIniciales = '';
+foreach (explode(' ', trim($pcNombre)) as $palabra) {
+    if ($palabra !== '') {
+        $pcIniciales .= mb_strtoupper(mb_substr($palabra, 0, 1));
+    }
+    if (mb_strlen($pcIniciales) >= 2) {
+        break;
+    }
+}
+$pcIniciales = $pcIniciales !== '' ? $pcIniciales : 'US';
+$pcRolLabel = (int)($pcUsuario['rol'] ?? 0) === 1 ? 'Administrador' : 'Usuario';
+
 $documentRoot = rtrim(str_replace('\\', '/', $_SERVER['DOCUMENT_ROOT'] ?? getcwd()), '/');
 $dirApp       = rtrim(str_replace('\\', '/', realpath(__DIR__ . '/..')), '/');
 $urlApp       = str_replace($documentRoot, '', $dirApp);
@@ -31,6 +49,8 @@ if ($urlApp === $dirApp) {
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Bootstrap Icons (iconografía) -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <!-- Font Awesome (iconografía) -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
     <!-- Estilos propios del sistema -->
     <link href="<?php echo $urlApp; ?>/assets/css/styles.css" rel="stylesheet">
 </head>
@@ -50,22 +70,26 @@ if ($urlApp === $dirApp) {
 
             <nav class="pc-nav">
                 <li><a href="<?php echo $urlApp; ?>/index.php" class="pc-nav-link <?php echo pcNavActivo($seccion, 'inicio'); ?>" aria-current="page"><i class="bi bi-speedometer2"></i> Inicio</a></li>
+                <?php if ((int)($pcUsuario['rol'] ?? 0) === 1): ?>
+                <li><a href="<?php echo $urlApp; ?>/views/Administrador/usuarios.php" class="pc-nav-link <?php echo pcNavActivo($seccion, 'usuarios'); ?>"><i class="bi bi-person-gear"></i> Usuarios</a></li>
+                <?php else: ?>
                 <li><a href="#" class="pc-nav-link deshabilitado <?php echo pcNavActivo($seccion, 'vehiculos'); ?>" tabindex="-1" aria-disabled="true"><i class="bi bi-car-front"></i> Vehículos</a></li>
                 <li><a href="#" class="pc-nav-link deshabilitado <?php echo pcNavActivo($seccion, 'plazas'); ?>" tabindex="-1" aria-disabled="true"><i class="bi bi-grid-3x3-gap"></i> Plazas</a></li>
                 <li><a href="#" class="pc-nav-link deshabilitado <?php echo pcNavActivo($seccion, 'clientes'); ?>" tabindex="-1" aria-disabled="true"><i class="bi bi-people"></i> Clientes</a></li>
                 <li><a href="#" class="pc-nav-link deshabilitado <?php echo pcNavActivo($seccion, 'tarifas'); ?>" tabindex="-1" aria-disabled="true"><i class="bi bi-tags"></i> Tarifas</a></li>
                 <li><a href="#" class="pc-nav-link deshabilitado <?php echo pcNavActivo($seccion, 'reportes'); ?>" tabindex="-1" aria-disabled="true"><i class="bi bi-file-earmark-bar-graph"></i> Reportes</a></li>
                 <li><a href="#" class="pc-nav-link deshabilitado <?php echo pcNavActivo($seccion, 'configuracion'); ?>" tabindex="-1" aria-disabled="true"><i class="bi bi-gear"></i> Configuración</a></li>
+                <?php endif; ?>
             </nav>
 
             <!-- Pie del sidebar: usuario en sesión + cerrar sesión -->
             <div class="pc-sidebar-foot d-flex align-items-center gap-2">
-                <span class="pc-avatar">AD</span>
+                <span class="pc-avatar"><?php echo htmlspecialchars($pcIniciales); ?></span>
                 <div class="lh-1">
-                    <div class="fw-semibold" style="color:#fff;">Admin Demo</div>
-                    <div class="small opacity-75">Administrador</div>
+                    <div class="fw-semibold" style="color:#fff;"><?php echo htmlspecialchars($pcNombre); ?></div>
+                    <div class="small opacity-75"><?php echo htmlspecialchars($pcRolLabel); ?></div>
                 </div>
-                <a href="<?php echo $urlApp; ?>/views/login.php" class="ms-auto text-decoration-none opacity-75" title="Cerrar sesión">
+                <a href="<?php echo $urlApp; ?>/logout.php" class="ms-auto text-decoration-none opacity-75" title="Cerrar sesión">
                     <i class="bi bi-box-arrow-right" style="color:#fff;"></i>
                 </a>
             </div>
@@ -84,21 +108,25 @@ if ($urlApp === $dirApp) {
             <!-- Mismo menú que el sidebar fijo (mantener sincronizado) -->
             <nav class="pc-nav">
                 <li><a href="<?php echo $urlApp; ?>/index.php" class="pc-nav-link <?php echo pcNavActivo($seccion, 'inicio'); ?>" aria-current="page"><i class="bi bi-speedometer2"></i> Inicio</a></li>
+                <?php if ((int)($pcUsuario['rol'] ?? 0) === 1): ?>
+                <li><a href="<?php echo $urlApp; ?>/views/Administrador/usuarios.php" class="pc-nav-link <?php echo pcNavActivo($seccion, 'usuarios'); ?>"><i class="bi bi-person-gear"></i> Usuarios</a></li>
+                <?php else: ?>
                 <li><a href="#" class="pc-nav-link deshabilitado <?php echo pcNavActivo($seccion, 'vehiculos'); ?>" tabindex="-1" aria-disabled="true"><i class="bi bi-car-front"></i> Vehículos</a></li>
                 <li><a href="#" class="pc-nav-link deshabilitado <?php echo pcNavActivo($seccion, 'plazas'); ?>" tabindex="-1" aria-disabled="true"><i class="bi bi-grid-3x3-gap"></i> Plazas</a></li>
                 <li><a href="#" class="pc-nav-link deshabilitado <?php echo pcNavActivo($seccion, 'clientes'); ?>" tabindex="-1" aria-disabled="true"><i class="bi bi-people"></i> Clientes</a></li>
                 <li><a href="#" class="pc-nav-link deshabilitado <?php echo pcNavActivo($seccion, 'tarifas'); ?>" tabindex="-1" aria-disabled="true"><i class="bi bi-tags"></i> Tarifas</a></li>
                 <li><a href="#" class="pc-nav-link deshabilitado <?php echo pcNavActivo($seccion, 'reportes'); ?>" tabindex="-1" aria-disabled="true"><i class="bi bi-file-earmark-bar-graph"></i> Reportes</a></li>
                 <li><a href="#" class="pc-nav-link deshabilitado <?php echo pcNavActivo($seccion, 'configuracion'); ?>" tabindex="-1" aria-disabled="true"><i class="bi bi-gear"></i> Configuración</a></li>
+                <?php endif; ?>
             </nav>
 
             <div class="pc-sidebar-foot d-flex align-items-center gap-2 mt-auto">
-                <span class="pc-avatar">AD</span>
+                <span class="pc-avatar"><?php echo htmlspecialchars($pcIniciales); ?></span>
                 <div class="lh-1">
-                    <div class="fw-semibold" style="color:#fff;">Admin Demo</div>
-                    <div class="small opacity-75">Administrador</div>
+                    <div class="fw-semibold" style="color:#fff;"><?php echo htmlspecialchars($pcNombre); ?></div>
+                    <div class="small opacity-75"><?php echo htmlspecialchars($pcRolLabel); ?></div>
                 </div>
-                <a href="<?php echo $urlApp; ?>/views/login.php" class="ms-auto text-decoration-none opacity-75" title="Cerrar sesión">
+                <a href="<?php echo $urlApp; ?>/logout.php" class="ms-auto text-decoration-none opacity-75" title="Cerrar sesión">
                     <i class="bi bi-box-arrow-right" style="color:#fff;"></i>
                 </a>
             </div>
@@ -117,15 +145,6 @@ if ($urlApp === $dirApp) {
                 <!-- Título de la sección actual (variable $titulo) -->
                 <h1 class="h5 fw-bold mb-0 d-none d-md-block"><?php echo htmlspecialchars($titulo); ?></h1>
 
-                <!-- Buscador global (maqueta, sin funcionalidad aún) -->
-                <div class="flex-grow-1 mx-md-4">
-                    <div class="input-group input-group-sm">
-                        <span class="input-group-text bg-transparent"><i class="bi bi-search"></i></span>
-                        <input type="search" class="form-control bg-transparent border-start-0"
-                               placeholder="Buscar..." aria-label="Buscar">
-                    </div>
-                </div>
-
                 <!-- Notificaciones con contador (maqueta) -->
                 <button class="btn position-relative text-muted" type="button" aria-label="Notificaciones">
                     <i class="bi bi-bell fs-5"></i>
@@ -133,6 +152,6 @@ if ($urlApp === $dirApp) {
                 </button>
 
                 <!-- Usuario en sesión -->
-                <span class="pc-avatar" title="Admin Demo">AD</span>
+                <span class="pc-avatar" title="<?php echo htmlspecialchars($pcNombre); ?>"><?php echo htmlspecialchars($pcIniciales); ?></span>
             </header>
             <main class="pc-contenido">
