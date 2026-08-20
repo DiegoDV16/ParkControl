@@ -1,4 +1,25 @@
 <?php
+/**
+ * ==========================================================================
+ * ParkControl · app/index.php
+ * ==========================================================================
+ * Punto de entrada del sistema. Exige sesión iniciada y redirige a la vista
+ * según el rol del usuario (rol 1 = administra → administrador.php).
+ * ==========================================================================
+ */
+session_start();
+
+// Sin sesión → login
+if (!isset($_SESSION['usuario'])) {
+    header("Location: views/login.php");
+    exit;
+}
+
+// Redirige a la vista según el rol
+if ((int)$_SESSION['usuario']['rol'] === 1) {
+    header("Location: views/Administrador/inicio.php");
+    exit;
+}
 ?>
 <!DOCTYPE html>
 <html lang="es">
