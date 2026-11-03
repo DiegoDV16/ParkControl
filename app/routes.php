@@ -67,4 +67,13 @@ return static function (Router $router): void {
     $router->get('ingresos/salida', [IngresoController::class, 'salida']);
     $router->post('ingresos/cerrar', [IngresoController::class, 'cerrar']);
     $router->post('ingresos/anular', [IngresoController::class, 'anular']);
+
+    // Reportes (solo administración)
+    $router->get('reportes', [ReporteController::class, 'index'], ['rol' => 1]);
+    $router->get('reportes/exportar', [ReporteController::class, 'exportar'], ['rol' => 1]);
+
+    // Configuración (solo administración)
+    $router->get('configuracion', [ConfiguracionController::class, 'index'], ['rol' => 1]);
+    $router->post('configuracion', [ConfiguracionController::class, 'guardar'], ['rol' => 1]);
+    $router->post('configuracion/clave', [ConfiguracionController::class, 'cambiarClave'], ['rol' => 1]);
 };

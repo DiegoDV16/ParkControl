@@ -119,12 +119,12 @@ borrarlas.
 |---|---|
 | Autenticación, sesión y CSRF | ✅ Implementado |
 | Panel con métricas reales | ✅ Implementado |
-| Usuarios (CRUD) | ⏳ En desarrollo |
-| Clientes y vehículos | ⏳ En desarrollo |
-| Plazas y tarifas | ⏳ En desarrollo |
-| Ingresos, cobro y pagos | ⏳ En desarrollo |
-| Reportes | ⏳ En desarrollo |
-| Configuración | ⏳ En desarrollo |
+| Usuarios (CRUD) | ✅ Implementado |
+| Clientes y vehículos | ✅ Implementado |
+| Plazas y tarifas | ✅ Implementado |
+| Ingresos, cobro y pagos | ✅ Implementado |
+| Reportes (con exportación CSV) | ✅ Implementado |
+| Configuración y cambio de contraseña | ✅ Implementado |
 
 ---
 
