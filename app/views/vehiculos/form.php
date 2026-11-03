@@ -3,8 +3,7 @@
  * ==========================================================================
  * ParkControl · app/views/vehiculos/form.php
  * ==========================================================================
- * Alta y edición de vehículos con selects dependientes marca → modelo.
- * Variables: $modo, $vehiculo, $errores, $old, $clientes, $marcas, $modelos.
+ * Alta y edición de vehículos (marca → modelo y tipo de vehículo).
  * ==========================================================================
  */
 
@@ -18,6 +17,8 @@ $valor = static function (string $campo, mixed $defecto = '') use ($old, $vehicu
 };
 $accion = $esEdicion ? url('vehiculos/actualizar') : url('vehiculos/crear');
 $idModeloActual = (int) $valor('idModelo', 0);
+$idClienteActual = (int) $valor('idCliente', 0);
+$idTipoActual = (int) $valor('idTipoVehiculo', 0);
 ?>
 
 <div class="mb-4">
@@ -50,7 +51,7 @@ $idModeloActual = (int) $valor('idModelo', 0);
                         <option value="0">Sin asignar</option>
                         <?php foreach ($clientes as $c): ?>
                             <option value="<?php echo (int) $c['idCliente']; ?>"
-                                <?php echo (int) $valor('idCliente', 0) === (int) $c['idCliente'] ? 'selected' : ''; ?>>
+                                <?php echo $idClienteActual === (int) $c['idCliente'] ? 'selected' : ''; ?>>
                                 <?php echo e(nombreCompleto($c) . ' · ' . $c['rut']); ?>
                             </option>
                         <?php endforeach; ?>
@@ -74,6 +75,22 @@ $idModeloActual = (int) $valor('idModelo', 0);
                         <option value="">Selecciona un modelo</option>
                     </select>
                     <?php if (isset($errores['idModelo'])): ?><div class="invalid-feedback"><?php echo e($errores['idModelo']); ?></div><?php endif; ?>
+                </div>
+
+                <div class="col-12 col-md-6">
+                    <label for="idTipoVehiculo" class="form-label">Tipo de vehículo <span class="text-danger">*</span></label>
+                    <select class="form-select <?php echo isset($errores['idTipoVehiculo']) ? 'is-invalid' : ''; ?>"
+                            id="idTipoVehiculo" name="idTipoVehiculo" required>
+                        <option value="">Selecciona un tipo</option>
+                        <?php foreach ($tipos as $t): ?>
+                            <option value="<?php echo (int) $t['idTipoVehiculo']; ?>"
+                                <?php echo $idTipoActual === (int) $t['idTipoVehiculo'] ? 'selected' : ''; ?>>
+                                <?php echo e($t['tipoVehiculo']); ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                    <?php if (isset($errores['idTipoVehiculo'])): ?><div class="invalid-feedback"><?php echo e($errores['idTipoVehiculo']); ?></div><?php endif; ?>
+                    <div class="form-text">Define el precio del servicio extra.</div>
                 </div>
 
                 <div class="col-6 col-md-6">

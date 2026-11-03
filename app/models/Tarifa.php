@@ -3,103 +3,89 @@
  * ==========================================================================
  * ParkControl · app/models/Tarifa.php
  * ==========================================================================
- * Tarifas de cobro por hora o fracción.
+ * Tarifas de ParkControl según las reglas del repositorio
+ * Bd_Eva01_Base_De_Datos (REGLAS_NEGOCIO.md):
+ *
+ *  · Estadía: mínimo 1 día; tramos por día; prórroga de 5 horas después de
+ *    cada día completo.
+ *  · Servicio extra: matriz por tipo de vehículo y servicio.
+ *
+ * No hay montos persistidos: el cobro se calcula al momento de la salida.
  * ==========================================================================
  */
 
 class Tarifa
 {
-    public static function todas(): array
-    {
-        return Database::getConexion()
-            ->query('SELECT * FROM tarifa ORDER BY activo DESC, nombre')
-            ->fetchAll();
-    }
+    /** Tramos de estadía (en pesos chilenos). */
+    public const ESTADIA = [
+        'dia_1_2' => 10000,   // 1 a 2 días
+        'dia_3_5' => 7000,    // 3 a 5 días
+        'fijo_6_7' => 40000,  // 6 a 7 días
+        'fijo_8_mas' => 50000, // 8 días o más
+    ];
 
-    public static function activas(): array
-    {
-        return Database::getConexion()
-            ->query('SELECT * FROM tarifa WHERE activo = 1 ORDER BY nombre')
-            ->fetchAll();
-    }
+    /** Matriz de servicios por tipo de vehículo. */
+    public const SERVICIOS = [
+        'SEDAN'     => ['Lavado' => 15000, 'Lavado y aspirado' => 22000, 'Aspirado' => 8000, 'Sin servicio' => 0],
+        'HATCHBACK' => ['Lavado' => 18000, 'Lavado y aspirado' => 25000, 'Aspirado' => 10000, 'Sin servicio' => 0],
+        'CAMIONETA' => ['Lavado' => 22000, 'Lavado y aspirado' => 30000, 'Aspirado' => 12000, 'Sin servicio' => 0],
+        'SUV'       => ['Lavado' => 20000, 'Lavado y aspirado' => 28000, 'Aspirado' => 11000, 'Sin servicio' => 0],
+    ];
 
-    public static function porId(int $id): ?array
+    /**
+     * Convierte una duración en minutos a días cobrables.
+     * Menos de 1 día = 1 día; después de cada día completo se toleran
+     * 5 horas de prórroga antes de cobrar un día adicional.
+     */
+    public static function diasCobrables(int $minutos): int
     {
-        $stmt = Database::getConexion()->prepare('SELECT * FROM tarifa WHERE idTarifa = :id LIMIT 1');
-        $stmt->execute([':id' => $id]);
-        $fila = $stmt->fetch();
-        return $fila ?: null;
-    }
+        $minutos = max(1, $minutos);
+        $horas = $minutos / 60;
 
-    /** Tarifa activa con menor id: se usa como predeterminada al ingresar. */
-    public static function predeterminada(): ?array
-    {
-        $fila = Database::getConexion()
-            ->query('SELECT * FROM tarifa WHERE activo = 1 ORDER BY idTarifa LIMIT 1')
-            ->fetch();
-        return $fila ?: null;
-    }
+        $diasCompletos = (int) floor($horas / 24);
+        $resto = $horas - ($diasCompletos * 24);
 
-    public static function crear(array $datos): int
-    {
-        $sql = 'INSERT INTO tarifa (nombre, valorHora, fraccionMinutos, valorFraccion, activo)
-                VALUES (:nombre, :valorHora, :fraccionMinutos, :valorFraccion, 1)';
-        $stmt = Database::getConexion()->prepare($sql);
-        $stmt->execute([
-            ':nombre'          => $datos['nombre'],
-            ':valorHora'       => $datos['valorHora'],
-            ':fraccionMinutos' => $datos['fraccionMinutos'],
-            ':valorFraccion'   => $datos['valorFraccion'],
-        ]);
-        return (int) Database::getConexion()->lastInsertId();
-    }
-
-    public static function actualizar(int $id, array $datos): void
-    {
-        $sql = 'UPDATE tarifa
-                SET nombre = :nombre, valorHora = :valorHora,
-                    fraccionMinutos = :fraccionMinutos, valorFraccion = :valorFraccion
-                WHERE idTarifa = :id';
-        $stmt = Database::getConexion()->prepare($sql);
-        $stmt->execute([
-            ':nombre'          => $datos['nombre'],
-            ':valorHora'       => $datos['valorHora'],
-            ':fraccionMinutos' => $datos['fraccionMinutos'],
-            ':valorFraccion'   => $datos['valorFraccion'],
-            ':id'              => $id,
-        ]);
-    }
-
-    public static function cambiarEstado(int $id, int $estado): void
-    {
-        $stmt = Database::getConexion()->prepare('UPDATE tarifa SET activo = :estado WHERE idTarifa = :id');
-        $stmt->execute([':estado' => $estado, ':id' => $id]);
-    }
-
-    public static function existeNombre(string $nombre, int $excepto = 0): bool
-    {
-        $stmt = Database::getConexion()->prepare(
-            'SELECT 1 FROM tarifa WHERE nombre = :nombre AND idTarifa <> :excepto LIMIT 1'
-        );
-        $stmt->execute([':nombre' => $nombre, ':excepto' => $excepto]);
-        return (bool) $stmt->fetchColumn();
-    }
-
-    /** Calcula el monto a cobrar por una estadía en minutos. */
-    public static function calcular(array $tarifa, int $minutos): float
-    {
-        if ($minutos <= 0) {
-            return 0.0;
+        if ($diasCompletos === 0) {
+            return 1;
         }
 
-        $fraccion = max(1, (int) $tarifa['fraccionMinutos']);
-        $valorHora = (float) $tarifa['valorHora'];
-        $valorFraccion = $tarifa['valorFraccion'] !== null
-            ? (float) $tarifa['valorFraccion']
-            : $valorHora / (60 / $fraccion);
+        return $resto > 5 ? $diasCompletos + 1 : $diasCompletos;
+    }
 
-        $bloques = (int) ceil($minutos / $fraccion);
+    /** Monto de la estadía según los días cobrables. */
+    public static function estadia(int $dias): float
+    {
+        $dias = max(1, $dias);
 
-        return round($bloques * $valorFraccion, 0);
+        if ($dias <= 2) {
+            return (float) (self::ESTADIA['dia_1_2'] * $dias);
+        }
+        if ($dias <= 5) {
+            return (float) (self::ESTADIA['dia_3_5'] * $dias);
+        }
+        if ($dias <= 7) {
+            return (float) self::ESTADIA['fijo_6_7'];
+        }
+
+        return (float) self::ESTADIA['fijo_8_mas'];
+    }
+
+    /** Precio del servicio extra según tipo de vehículo. */
+    public static function servicio(string $tipoVehiculo, string $servicio): float
+    {
+        $tipo = strtoupper(trim($tipoVehiculo));
+        $servicio = trim($servicio) !== '' ? trim($servicio) : 'Sin servicio';
+
+        $matriz = self::SERVICIOS[$tipo] ?? self::SERVICIOS['SEDAN'];
+
+        return (float) ($matriz[$servicio] ?? 0);
+    }
+
+    /** Total a cobrar por un ingreso. */
+    public static function total(int $minutos, string $tipoVehiculo, string $servicio): float
+    {
+        $dias = self::diasCobrables($minutos);
+
+        return round(self::estadia($dias) + self::servicio($tipoVehiculo, $servicio), 0);
     }
 }

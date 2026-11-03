@@ -130,9 +130,37 @@ borrarlas.
 
 ## Base de datos
 
-Tablas del negocio: `cliente`, `vehiculo`, `marca`, `modelo`, `fila`, `plaza`,
-`ingreso`, `servicioextra`, `tarifa`, `pago`, `usuario`, `rol`,
-`configuracion`, `auditoria` y `schema_migrations`.
+Tablas del negocio: `cliente`, `vehiculo`, `marca`, `modelo`, `tipovehiculo`,
+`fila`, `ingreso`, `servicioextra`, `pago`, `usuario`, `rol`, `configuracion`,
+`auditoria` y `schema_migrations`.
+
+### Filas y ocupación
+
+Las filas disponibles son **A, E, F, G, L y Segundo Patio**, cada una con
+**16 espacios**. No hay plazas numeradas: al registrar un ingreso el operador
+solo indica la fila. La ocupación se calcula contando los ingresos con
+`fechaTermino IS NULL`; la fila se considera llena al alcanzar su capacidad.
+
+### Tarifas
+
+Los precios siguen las reglas del repositorio
+`Bd_Eva01_Base_De_Datos` (`REGLAS_NEGOCIO.md`):
+
+| Días | Valor |
+|---|---|
+| 1 a 2 | $10.000 por día |
+| 3 a 5 | $7.000 por día |
+| 6 a 7 | $40.000 fijo |
+| 8 o más | $50.000 fijo |
+
+Una estadía de menos de un día se cobra como 1 día; después de cada día
+completo hay 5 horas de prórroga. El servicio extra se cobra según el tipo de
+vehículo (SEDAN, HATCHBACK, CAMIONETA, SUV), con la matriz de precios de
+Lavado, Lavado y aspirado, Aspirado y Sin servicio. El monto se calcula al
+registrar la salida y queda en `ingreso.montoTotal` y `pago`.
+
+Las tablas `plaza` y `tarifa` quedaron como legado del primer prototipo y ya
+no se usan; el modelo vigente está en `tipovehiculo`, `fila` e `ingreso`.
 
 Los cambios de esquema se hacen **siempre** con un archivo nuevo en
 `database/migrations/` (nunca editando la base a mano) y se aplican con

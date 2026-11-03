@@ -3,7 +3,7 @@
  * ==========================================================================
  * ParkControl · app/controllers/VehiculoController.php
  * ==========================================================================
- * Gestión de vehículos y su asociación con un cliente.
+ * Gestión de vehículos, su tipo y propietario.
  * ==========================================================================
  */
 
@@ -22,12 +22,13 @@ class VehiculoController
     public function crear(): void
     {
         $vehiculo = [
-            'idVehiculo' => 0,
-            'idCliente'  => 0,
-            'patente'    => '',
-            'anio'       => '',
-            'color'      => '',
-            'idModelo'   => 0,
+            'idVehiculo'      => 0,
+            'idCliente'       => 0,
+            'patente'         => '',
+            'anio'            => '',
+            'color'           => '',
+            'idModelo'        => 0,
+            'idTipoVehiculo'  => 0,
         ];
         $modo = 'crear';
         $errores = $_SESSION['_errores'] ?? [];
@@ -124,6 +125,7 @@ class VehiculoController
             'clientes' => Cliente::activos(),
             'marcas'   => Marca::todas(),
             'modelos'  => Modelo::todos(),
+            'tipos'    => TipoVehiculo::todos(),
         ];
     }
 
@@ -131,11 +133,12 @@ class VehiculoController
     private function datosFormulario(): array
     {
         return [
-            'idCliente' => (int) ($_POST['idCliente'] ?? 0),
-            'patente'   => strtoupper(preg_replace('/[^A-Za-z0-9]/', '', trim((string) ($_POST['patente'] ?? ''))) ?? ''),
-            'anio'      => (int) ($_POST['anio'] ?? 0),
-            'color'     => trim((string) ($_POST['color'] ?? '')),
-            'idModelo'  => (int) ($_POST['idModelo'] ?? 0),
+            'idCliente'      => (int) ($_POST['idCliente'] ?? 0),
+            'patente'        => strtoupper(preg_replace('/[^A-Za-z0-9]/', '', trim((string) ($_POST['patente'] ?? ''))) ?? ''),
+            'anio'           => (int) ($_POST['anio'] ?? 0),
+            'color'          => trim((string) ($_POST['color'] ?? '')),
+            'idModelo'       => (int) ($_POST['idModelo'] ?? 0),
+            'idTipoVehiculo' => (int) ($_POST['idTipoVehiculo'] ?? 0),
         ];
     }
 
@@ -146,7 +149,8 @@ class VehiculoController
             ->patente('patente', 'patente')
             ->entero('anio', 'año', 1950, (int) date('Y') + 1)
             ->longitud('color', 'color', 0, 12)
-            ->entero('idModelo', 'modelo', 1, PHP_INT_MAX);
+            ->entero('idModelo', 'modelo', 1, PHP_INT_MAX)
+            ->entero('idTipoVehiculo', 'tipo de vehículo', 1, PHP_INT_MAX);
 
         if ($datos['patente'] !== '' && Vehiculo::existePatente($datos['patente'], $idActual)) {
             $v->agregar('patente', 'Ya existe un vehículo con esa patente.');
@@ -154,6 +158,10 @@ class VehiculoController
 
         if ($datos['idModelo'] > 0 && !Modelo::existe($datos['idModelo'])) {
             $v->agregar('idModelo', 'El modelo seleccionado no es válido.');
+        }
+
+        if ($datos['idTipoVehiculo'] > 0 && TipoVehiculo::porId($datos['idTipoVehiculo']) === null) {
+            $v->agregar('idTipoVehiculo', 'El tipo de vehículo seleccionado no es válido.');
         }
 
         if ($datos['idCliente'] > 0 && Cliente::porId($datos['idCliente']) === null) {

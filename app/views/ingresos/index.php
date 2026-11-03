@@ -70,7 +70,7 @@ require PC_APP . '/views/layout/header.php';
             <div class="col-12 col-md-4">
                 <label class="form-label small mb-1">Buscar</label>
                 <input type="search" name="q" class="form-control form-control-sm"
-                       value="<?php echo e($busqueda); ?>" placeholder="Patente, cliente o plaza">
+                       value="<?php echo e($busqueda); ?>" placeholder="Patente, cliente o fila">
             </div>
             <div class="col-12 col-md-2 d-flex gap-2">
                 <button class="btn btn-sm btn-primary flex-grow-1" type="submit">Filtrar</button>
@@ -88,7 +88,7 @@ require PC_APP . '/views/layout/header.php';
                     <th>#</th>
                     <th>Vehículo</th>
                     <th>Cliente</th>
-                    <th>Plaza</th>
+                    <th>Fila</th>
                     <th>Entrada</th>
                     <th>Salida</th>
                     <th>Estado</th>
@@ -113,7 +113,7 @@ require PC_APP . '/views/layout/header.php';
                         <td class="text-muted small"><?php echo (int) $i['idIngreso']; ?></td>
                         <td class="fw-semibold"><?php echo e($i['patente']); ?></td>
                         <td class="small"><?php echo e(nombreCompleto($i)); ?></td>
-                        <td><?php echo e($i['plaza'] ?? '—'); ?></td>
+                        <td><?php echo e($i['fila'] ?? '—'); ?></td>
                         <td class="small">
                             <?php echo e(fechaCorta($i['fechaInicio'])); ?>
                             <span class="text-muted"><?php echo e(horaCorta($i['horaInicio'])); ?></span>

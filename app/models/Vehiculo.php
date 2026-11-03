@@ -3,17 +3,18 @@
  * ==========================================================================
  * ParkControl · app/models/Vehiculo.php
  * ==========================================================================
- * Acceso a datos de la tabla `vehiculo` con su marca, modelo y dueño.
+ * Vehículos con marca, modelo, tipo y propietario.
  * ==========================================================================
  */
 
 class Vehiculo
 {
-    private const SELECT_BASE = 'SELECT v.*, m.modelo, ma.marca,
+    private const SELECT_BASE = 'SELECT v.*, m.modelo, ma.marca, tv.tipoVehiculo,
                                         c.nombres, c.apellidoPaterno, c.apellidoMaterno
                                  FROM vehiculo v
                                  INNER JOIN modelo m ON m.idModelo = v.idModelo
                                  INNER JOIN marca ma ON ma.idMarca = m.idMarca
+                                 LEFT JOIN tipovehiculo tv ON tv.idTipoVehiculo = v.idTipoVehiculo
                                  LEFT JOIN cliente c ON c.idCliente = v.idCliente';
 
     public static function listar(string $busqueda = ''): array
@@ -23,7 +24,7 @@ class Vehiculo
 
         if ($busqueda !== '') {
             $sql .= ' WHERE (v.patente LIKE :q OR ma.marca LIKE :q OR m.modelo LIKE :q
-                      OR c.nombres LIKE :q OR c.apellidoPaterno LIKE :q)';
+                      OR tv.tipoVehiculo LIKE :q OR c.nombres LIKE :q OR c.apellidoPaterno LIKE :q)';
             $parametros[':q'] = '%' . $busqueda . '%';
         }
 
@@ -44,15 +45,16 @@ class Vehiculo
 
     public static function crear(array $datos): int
     {
-        $sql = 'INSERT INTO vehiculo (idCliente, patente, anio, color, idModelo)
-                VALUES (:idCliente, :patente, :anio, :color, :idModelo)';
+        $sql = 'INSERT INTO vehiculo (idCliente, patente, anio, color, idModelo, idTipoVehiculo)
+                VALUES (:idCliente, :patente, :anio, :color, :idModelo, :idTipoVehiculo)';
         $stmt = Database::getConexion()->prepare($sql);
         $stmt->execute([
-            ':idCliente' => $datos['idCliente'] > 0 ? $datos['idCliente'] : null,
-            ':patente'   => $datos['patente'],
-            ':anio'      => $datos['anio'] > 0 ? $datos['anio'] : null,
-            ':color'     => $datos['color'] !== '' ? $datos['color'] : null,
-            ':idModelo'  => $datos['idModelo'],
+            ':idCliente'      => $datos['idCliente'] > 0 ? $datos['idCliente'] : null,
+            ':patente'        => $datos['patente'],
+            ':anio'           => $datos['anio'] > 0 ? $datos['anio'] : null,
+            ':color'          => $datos['color'] !== '' ? $datos['color'] : null,
+            ':idModelo'       => $datos['idModelo'],
+            ':idTipoVehiculo' => $datos['idTipoVehiculo'],
         ]);
 
         return (int) Database::getConexion()->lastInsertId();
@@ -62,16 +64,17 @@ class Vehiculo
     {
         $sql = 'UPDATE vehiculo
                 SET idCliente = :idCliente, patente = :patente, anio = :anio,
-                    color = :color, idModelo = :idModelo
+                    color = :color, idModelo = :idModelo, idTipoVehiculo = :idTipoVehiculo
                 WHERE idVehiculo = :id';
         $stmt = Database::getConexion()->prepare($sql);
         $stmt->execute([
-            ':idCliente' => $datos['idCliente'] > 0 ? $datos['idCliente'] : null,
-            ':patente'   => $datos['patente'],
-            ':anio'      => $datos['anio'] > 0 ? $datos['anio'] : null,
-            ':color'     => $datos['color'] !== '' ? $datos['color'] : null,
-            ':idModelo'  => $datos['idModelo'],
-            ':id'        => $id,
+            ':idCliente'      => $datos['idCliente'] > 0 ? $datos['idCliente'] : null,
+            ':patente'        => $datos['patente'],
+            ':anio'           => $datos['anio'] > 0 ? $datos['anio'] : null,
+            ':color'          => $datos['color'] !== '' ? $datos['color'] : null,
+            ':idModelo'       => $datos['idModelo'],
+            ':idTipoVehiculo' => $datos['idTipoVehiculo'],
+            ':id'             => $id,
         ]);
     }
 
@@ -90,7 +93,6 @@ class Vehiculo
         return (bool) $stmt->fetchColumn();
     }
 
-    /** ¿El vehículo tiene ingresos asociados? (bloquea el borrado). */
     public static function tieneIngresos(int $id): bool
     {
         $stmt = Database::getConexion()->prepare('SELECT 1 FROM ingreso WHERE idVehiculo = :id LIMIT 1');

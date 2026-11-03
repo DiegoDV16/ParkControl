@@ -40,7 +40,6 @@ class AuthController
             redirigir('login');
         }
 
-        Flash::exito('Bienvenido de nuevo, ' . Auth::usuario()['nombres'] . '.');
         redirigir('dashboard');
     }
 

@@ -84,7 +84,7 @@ $metricas = [
                             <tr>
                                 <th>Vehículo</th>
                                 <th>Cliente</th>
-                                <th>Plaza</th>
+                                <th>Fila</th>
                                 <th>Entrada</th>
                                 <th>Estado</th>
                                 <th class="text-end">Monto</th>
@@ -105,7 +105,7 @@ $metricas = [
                                     <tr>
                                         <td class="fw-semibold"><?php echo e($ingreso['patente']); ?></td>
                                         <td><?php echo e(nombreCompleto($ingreso)); ?></td>
-                                        <td><?php echo e($ingreso['plaza'] ?? '—'); ?></td>
+                                        <td><?php echo e($ingreso['fila'] ?? '—'); ?></td>
                                         <td>
                                             <?php echo e(fechaCorta($ingreso['fechaInicio'])); ?>
                                             <span class="text-muted small"><?php echo e(horaCorta($ingreso['horaInicio'])); ?></span>
@@ -156,7 +156,7 @@ $metricas = [
                         <strong><?php echo $plazas['ocupadas']; ?></strong>
                     </li>
                     <li class="d-flex justify-content-between py-1">
-                        <span><i class="bi bi-circle-fill text-warning me-1" style="font-size:.5rem;"></i> Fuera de servicio</span>
+                        <span><i class="bi bi-circle-fill text-warning me-1" style="font-size:.5rem;"></i> Filas llenas</span>
                         <strong><?php echo $plazas['fuera']; ?></strong>
                     </li>
                 </ul>
