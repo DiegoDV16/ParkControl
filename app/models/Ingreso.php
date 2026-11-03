@@ -3,16 +3,36 @@
  * ==========================================================================
  * ParkControl · app/models/Ingreso.php
  * ==========================================================================
- * Consultas de la tabla `ingreso` usadas por el panel y los reportes.
+ * Ingresos del estacionamiento: entrada por fila, salida con cobro por día
+ * y anulación. La ocupación se calcula con fechaTermino IS NULL.
  * ==========================================================================
  */
 
 class Ingreso
 {
+    /** Consulta base con cliente, vehículo, fila, servicio y tipo de vehículo. */
+    private static function base(): string
+    {
+        return 'SELECT i.*,
+                       c.nombres, c.apellidoPaterno, c.apellidoMaterno, c.rut AS clienteRut,
+                       v.patente,
+                       f.fila,
+                       se.servicioExtra,
+                       tv.tipoVehiculo,
+                       u.nombres AS usuarioNombres, u.apellidoPaterno AS usuarioApellido
+                FROM ingreso i
+                INNER JOIN cliente c ON c.idCliente = i.idCliente
+                INNER JOIN vehiculo v ON v.idVehiculo = i.idVehiculo
+                INNER JOIN fila f ON f.idFila = i.idFilaEstacionamiento
+                INNER JOIN usuario u ON u.idUsuario = i.idUsuario
+                LEFT JOIN servicioextra se ON se.idServicioExtra = i.idServicioExtra
+                LEFT JOIN tipovehiculo tv ON tv.idTipoVehiculo = v.idTipoVehiculo';
+    }
+
     public static function abiertos(): int
     {
         return (int) Database::getConexion()
-            ->query("SELECT COUNT(*) FROM ingreso WHERE estado = 'abierto'")
+            ->query('SELECT COUNT(*) FROM ingreso WHERE fechaTermino IS NULL')
             ->fetchColumn();
     }
 
@@ -25,49 +45,25 @@ class Ingreso
 
     public static function recaudacionHoy(): float
     {
-        $sql = 'SELECT COALESCE(SUM(p.monto), 0)
-                FROM pago p
-                WHERE DATE(p.fechaPago) = CURDATE()';
+        $sql = 'SELECT COALESCE(SUM(p.monto), 0) FROM pago p WHERE DATE(p.fechaPago) = CURDATE()';
         return (float) Database::getConexion()->query($sql)->fetchColumn();
     }
 
-    /** Últimos ingresos registrados con cliente, vehículo y plaza. */
+    /** Últimos ingresos registrados (panel). */
     public static function ultimos(int $limite = 6): array
     {
         $limite = max(1, min(50, $limite));
         $sql = 'SELECT i.idIngreso, i.fechaInicio, i.horaInicio, i.fechaTermino,
-                       i.estado, i.montoTotal,
+                       i.montoTotal, i.estado,
                        c.nombres, c.apellidoPaterno, c.apellidoMaterno,
-                       v.patente,
-                       pl.numero AS plaza
+                       v.patente, f.fila
                 FROM ingreso i
                 INNER JOIN cliente c ON c.idCliente = i.idCliente
                 INNER JOIN vehiculo v ON v.idVehiculo = i.idVehiculo
-                LEFT JOIN plaza pl ON pl.idPlaza = i.idPlaza
+                INNER JOIN fila f ON f.idFila = i.idFilaEstacionamiento
                 ORDER BY i.idIngreso DESC
                 LIMIT ' . $limite;
         return Database::getConexion()->query($sql)->fetchAll();
-    }
-
-    /** Consulta base con todos los datos relacionados del ingreso. */
-    private static function base(): string
-    {
-        return 'SELECT i.*,
-                       c.nombres, c.apellidoPaterno, c.apellidoMaterno, c.rut AS clienteRut,
-                       v.patente,
-                       pl.numero AS plaza,
-                       f.fila,
-                       t.nombre AS tarifaNombre, t.valorHora, t.fraccionMinutos, t.valorFraccion,
-                       se.servicioExtra, se.valor AS servicioValor,
-                       u.nombres AS usuarioNombres, u.apellidoPaterno AS usuarioApellido
-                FROM ingreso i
-                INNER JOIN cliente c ON c.idCliente = i.idCliente
-                INNER JOIN vehiculo v ON v.idVehiculo = i.idVehiculo
-                INNER JOIN usuario u ON u.idUsuario = i.idUsuario
-                LEFT JOIN plaza pl ON pl.idPlaza = i.idPlaza
-                LEFT JOIN fila f ON f.idFila = pl.idFila
-                LEFT JOIN tarifa t ON t.idTarifa = i.idTarifa
-                LEFT JOIN servicioextra se ON se.idServicioExtra = i.idServicioExtra';
     }
 
     /** Listado filtrable para la pantalla de ingresos. */
@@ -77,13 +73,16 @@ class Ingreso
         $condiciones = [];
         $parametros = [];
 
-        if ($estado !== '') {
-            $condiciones[] = 'i.estado = :estado';
-            $parametros[':estado'] = $estado;
+        if ($estado === 'abierto') {
+            $condiciones[] = 'i.fechaTermino IS NULL';
+        } elseif ($estado === 'cerrado') {
+            $condiciones[] = "i.fechaTermino IS NOT NULL AND i.estado = 'cerrado'";
+        } elseif ($estado === 'anulado') {
+            $condiciones[] = "i.estado = 'anulado'";
         }
 
         if ($busqueda !== '') {
-            $condiciones[] = '(v.patente LIKE :q OR c.nombres LIKE :q OR c.apellidoPaterno LIKE :q OR pl.numero LIKE :q)';
+            $condiciones[] = '(v.patente LIKE :q OR c.nombres LIKE :q OR c.apellidoPaterno LIKE :q OR f.fila LIKE :q)';
             $parametros[':q'] = '%' . $busqueda . '%';
         }
 
@@ -119,7 +118,7 @@ class Ingreso
     public static function activoPorVehiculo(int $idVehiculo): ?array
     {
         $stmt = Database::getConexion()->prepare(
-            "SELECT * FROM ingreso WHERE idVehiculo = :id AND estado = 'abierto' LIMIT 1"
+            'SELECT * FROM ingreso WHERE idVehiculo = :id AND fechaTermino IS NULL LIMIT 1'
         );
         $stmt->execute([':id' => $idVehiculo]);
         $fila = $stmt->fetch();
@@ -127,8 +126,8 @@ class Ingreso
     }
 
     /**
-     * Registra la entrada: crea el ingreso y ocupa la plaza en una transacción.
-     * Lanza RuntimeException si la plaza ya no está libre.
+     * Registra la entrada: valida la capacidad de la fila y crea el ingreso
+     * dentro de una transacción. Lanza RuntimeException si la fila está llena.
      */
     public static function crear(array $datos): int
     {
@@ -136,20 +135,33 @@ class Ingreso
         $pdo->beginTransaction();
 
         try {
-            $ocupar = $pdo->prepare('UPDATE plaza SET estado = 2 WHERE idPlaza = :id AND estado = 1');
-            $ocupar->execute([':id' => $datos['idPlaza']]);
+            $fila = $pdo->prepare('SELECT capacidadTotal FROM fila WHERE idFila = :id FOR UPDATE');
+            $fila->execute([':id' => $datos['idFila']]);
+            $capacidad = (int) $fila->fetchColumn();
 
-            if ($ocupar->rowCount() === 0) {
-                throw new RuntimeException('La plaza seleccionada ya no está disponible.');
+            if ($capacidad <= 0) {
+                throw new RuntimeException('La fila seleccionada no existe.');
+            }
+
+            $contar = $pdo->prepare(
+                'SELECT COUNT(*) FROM ingreso WHERE idFilaEstacionamiento = :id AND fechaTermino IS NULL'
+            );
+            $contar->execute([':id' => $datos['idFila']]);
+            $ocupadas = (int) $contar->fetchColumn();
+
+            if ($ocupadas >= $capacidad) {
+                throw new RuntimeException('La fila seleccionada ya está completa.');
             }
 
             $stmt = $pdo->prepare(
                 "INSERT INTO ingreso
                     (idServicioExtra, idUsuario, idVehiculo, idFilaEstacionamiento, idCliente,
-                     idPlaza, idTarifa, fechaInicio, horaInicio, numeroVuelo, llaves, observacion, estado)
+                     fechaInicio, horaInicio, fechaRegreso, horaRegreso,
+                     numeroVuelo, llaves, observacion, estado)
                  VALUES
                     (:idServicioExtra, :idUsuario, :idVehiculo, :idFila, :idCliente,
-                     :idPlaza, :idTarifa, CURDATE(), CURTIME(), :numeroVuelo, :llaves, :observacion, 'abierto')"
+                     CURDATE(), CURTIME(), :fechaRegreso, :horaRegreso,
+                     :numeroVuelo, :llaves, :observacion, 'abierto')"
             );
             $stmt->execute([
                 ':idServicioExtra' => $datos['idServicioExtra'] > 0 ? $datos['idServicioExtra'] : null,
@@ -157,8 +169,8 @@ class Ingreso
                 ':idVehiculo'      => $datos['idVehiculo'],
                 ':idFila'          => $datos['idFila'],
                 ':idCliente'       => $datos['idCliente'],
-                ':idPlaza'         => $datos['idPlaza'],
-                ':idTarifa'        => $datos['idTarifa'],
+                ':fechaRegreso'    => $datos['fechaRegreso'] !== '' ? $datos['fechaRegreso'] : null,
+                ':horaRegreso'     => $datos['horaRegreso'] !== '' ? $datos['horaRegreso'] : null,
                 ':numeroVuelo'     => $datos['numeroVuelo'] !== '' ? $datos['numeroVuelo'] : null,
                 ':llaves'          => $datos['llaves'],
                 ':observacion'     => $datos['observacion'] !== '' ? $datos['observacion'] : null,
@@ -175,7 +187,7 @@ class Ingreso
         }
     }
 
-    /** Cierra el ingreso, libera la plaza y registra el pago. */
+    /** Cierra el ingreso con el monto calculado y registra el pago. */
     public static function cerrar(int $id, float $monto, string $metodo, float $recibido, float $vuelto): void
     {
         $pdo = Database::getConexion();
@@ -184,9 +196,8 @@ class Ingreso
         try {
             $stmt = $pdo->prepare(
                 "UPDATE ingreso
-                 SET fechaTermino = CURDATE(), horaTermino = CURTIME(),
-                     montoTotal = :monto, estado = 'cerrado'
-                 WHERE idIngreso = :id AND estado = 'abierto'"
+                 SET fechaTermino = CURDATE(), horaTermino = CURTIME(), montoTotal = :monto
+                 WHERE idIngreso = :id AND fechaTermino IS NULL AND estado = 'abierto'"
             );
             $stmt->execute([':monto' => $monto, ':id' => $id]);
 
@@ -194,11 +205,8 @@ class Ingreso
                 throw new RuntimeException('El ingreso ya fue cerrado o anulado.');
             }
 
-            $plaza = $pdo->prepare(
-                'UPDATE plaza p INNER JOIN ingreso i ON i.idPlaza = p.idPlaza
-                 SET p.estado = 1 WHERE i.idIngreso = :id AND p.estado = 2'
-            );
-            $plaza->execute([':id' => $id]);
+            $estado = $pdo->prepare("UPDATE ingreso SET estado = 'cerrado' WHERE idIngreso = :id");
+            $estado->execute([':id' => $id]);
 
             $pago = $pdo->prepare(
                 'INSERT INTO pago (idIngreso, idUsuario, metodo, monto, vuelto)
@@ -221,29 +229,17 @@ class Ingreso
         }
     }
 
-    /** Anula un ingreso abierto y libera su plaza. */
+    /** Anula un ingreso activo sin cobrar. */
     public static function anular(int $id): void
     {
-        $pdo = Database::getConexion();
-        $pdo->beginTransaction();
+        $stmt = Database::getConexion()->prepare(
+            "UPDATE ingreso SET fechaTermino = CURDATE(), horaTermino = CURTIME(), estado = 'anulado'
+             WHERE idIngreso = :id AND fechaTermino IS NULL AND estado = 'abierto'"
+        );
+        $stmt->execute([':id' => $id]);
 
-        try {
-            $stmt = $pdo->prepare("UPDATE ingreso SET estado = 'anulado' WHERE idIngreso = :id AND estado = 'abierto'");
-            $stmt->execute([':id' => $id]);
-
-            if ($stmt->rowCount() === 0) {
-                throw new RuntimeException('Solo se pueden anular ingresos abiertos.');
-            }
-
-            $pdo->prepare('UPDATE plaza p INNER JOIN ingreso i ON i.idPlaza = p.idPlaza SET p.estado = 1
-                           WHERE i.idIngreso = :id AND p.estado = 2')->execute([':id' => $id]);
-
-            $pdo->commit();
-        } catch (Throwable $error) {
-            if ($pdo->inTransaction()) {
-                $pdo->rollBack();
-            }
-            throw $error;
+        if ($stmt->rowCount() === 0) {
+            throw new RuntimeException('Solo se pueden anular ingresos activos.');
         }
     }
 
@@ -260,18 +256,13 @@ class Ingreso
         return max(1, (int) ceil(($fin->getTimestamp() - $inicio->getTimestamp()) / 60));
     }
 
-    /** Monto estimado: tarifa por tiempo + servicio extra. */
+    /** Monto a cobrar: tramo de días + servicio según tipo de vehículo. */
     public static function montoEstimado(array $ingreso, int $minutos): float
     {
-        $tarifa = [
-            'valorHora'       => $ingreso['valorHora'] ?? 0,
-            'fraccionMinutos' => $ingreso['fraccionMinutos'] ?? 60,
-            'valorFraccion'   => $ingreso['valorFraccion'] ?? null,
-        ];
-
-        $monto = Tarifa::calcular($tarifa, $minutos);
-        $monto += (float) ($ingreso['servicioValor'] ?? 0);
-
-        return round($monto, 0);
+        return Tarifa::total(
+            $minutos,
+            (string) ($ingreso['tipoVehiculo'] ?? 'SEDAN'),
+            (string) ($ingreso['servicioExtra'] ?? 'Sin servicio')
+        );
     }
 }

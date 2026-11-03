@@ -3,7 +3,7 @@
  * ==========================================================================
  * ParkControl · app/controllers/IngresoController.php
  * ==========================================================================
- * Registro de entradas, cálculo de estadía y cierre con cobro.
+ * Entradas por fila, salida con cobro por día y anulación.
  * ==========================================================================
  */
 
@@ -32,10 +32,8 @@ class IngresoController
     {
         $clientes = Cliente::activos();
         $vehiculos = Vehiculo::listar();
-        $plazas = Plaza::libres();
-        $tarifas = Tarifa::activas();
+        $filas = Fila::disponibles();
         $servicios = ServicioExtra::activos();
-        $tarifaDefecto = Tarifa::predeterminada();
 
         $errores = $_SESSION['_errores'] ?? [];
         $old = $_SESSION['_old'] ?? [];
@@ -51,9 +49,10 @@ class IngresoController
         $datos = [
             'idCliente'       => (int) ($_POST['idCliente'] ?? 0),
             'idVehiculo'      => (int) ($_POST['idVehiculo'] ?? 0),
-            'idPlaza'         => (int) ($_POST['idPlaza'] ?? 0),
-            'idTarifa'        => (int) ($_POST['idTarifa'] ?? 0),
+            'idFila'          => (int) ($_POST['idFila'] ?? 0),
             'idServicioExtra' => (int) ($_POST['idServicioExtra'] ?? 0),
+            'fechaRegreso'    => trim((string) ($_POST['fechaRegreso'] ?? '')),
+            'horaRegreso'     => trim((string) ($_POST['horaRegreso'] ?? '')),
             'numeroVuelo'     => trim((string) ($_POST['numeroVuelo'] ?? '')),
             'llaves'          => isset($_POST['llaves']) ? 1 : 0,
             'observacion'     => trim((string) ($_POST['observacion'] ?? '')),
@@ -62,23 +61,24 @@ class IngresoController
         $v = (new Validador(array_map('strval', $datos)))
             ->entero('idCliente', 'cliente', 1, PHP_INT_MAX)
             ->entero('idVehiculo', 'vehículo', 1, PHP_INT_MAX)
-            ->entero('idPlaza', 'plaza', 1, PHP_INT_MAX)
-            ->entero('idTarifa', 'tarifa', 1, PHP_INT_MAX)
+            ->entero('idFila', 'fila', 1, PHP_INT_MAX)
+            ->fecha('fechaRegreso', 'fecha de regreso')
             ->longitud('numeroVuelo', 'número de vuelo', 0, 12)
-            ->longitud('observacion', 'observación', 0, 1000);
+            ->longitud('observacion', 'observación', 0, 500);
+
+        if ($datos['fechaRegreso'] !== '' && $datos['fechaRegreso'] < date('Y-m-d')) {
+            $v->agregar('fechaRegreso', 'La fecha de regreso no puede ser anterior a hoy.');
+        }
 
         $vehiculo = $datos['idVehiculo'] > 0 ? Vehiculo::porId($datos['idVehiculo']) : null;
-        $plaza = $datos['idPlaza'] > 0 ? Plaza::porId($datos['idPlaza']) : null;
-        $tarifa = $datos['idTarifa'] > 0 ? Tarifa::porId($datos['idTarifa']) : null;
+        $fila = $datos['idFila'] > 0 ? Fila::porId($datos['idFila']) : null;
 
         if ($vehiculo === null) {
             $v->agregar('idVehiculo', 'Selecciona un vehículo válido.');
         }
-        if ($plaza === null || (int) $plaza['estado'] !== Plaza::LIBRE) {
-            $v->agregar('idPlaza', 'La plaza seleccionada no está libre.');
-        }
-        if ($tarifa === null || (int) $tarifa['activo'] !== 1) {
-            $v->agregar('idTarifa', 'Selecciona una tarifa activa.');
+        if ($fila === null || (int) $fila['estado'] !== 1
+            || Fila::ocupadas($datos['idFila']) >= (int) $fila['capacidadTotal']) {
+            $v->agregar('idFila', 'La fila seleccionada no tiene espacio disponible.');
         }
         if ($datos['idCliente'] > 0 && Cliente::porId($datos['idCliente']) === null) {
             $v->agregar('idCliente', 'El cliente seleccionado no es válido.');
@@ -88,6 +88,9 @@ class IngresoController
         }
         if ($datos['idVehiculo'] > 0 && Ingreso::activoPorVehiculo($datos['idVehiculo']) !== null) {
             $v->agregar('idVehiculo', 'El vehículo ya tiene un ingreso abierto.');
+        }
+        if ($datos['idServicioExtra'] > 0 && ServicioExtra::porId($datos['idServicioExtra']) === null) {
+            $v->agregar('idServicioExtra', 'El servicio seleccionado no es válido.');
         }
 
         if (!$v->valido()) {
@@ -102,10 +105,10 @@ class IngresoController
                 'idServicioExtra' => $datos['idServicioExtra'],
                 'idUsuario'       => (int) Auth::usuario()['id'],
                 'idVehiculo'      => $datos['idVehiculo'],
-                'idFila'          => (int) $plaza['idFila'],
+                'idFila'          => $datos['idFila'],
                 'idCliente'       => $datos['idCliente'],
-                'idPlaza'         => $datos['idPlaza'],
-                'idTarifa'        => $datos['idTarifa'],
+                'fechaRegreso'    => $datos['fechaRegreso'],
+                'horaRegreso'     => $datos['horaRegreso'],
                 'numeroVuelo'     => $datos['numeroVuelo'],
                 'llaves'          => $datos['llaves'],
                 'observacion'     => $datos['observacion'],
@@ -115,8 +118,8 @@ class IngresoController
             redirigir('ingresos/crear');
         }
 
-        Auditoria::registrar('crear', 'ingreso', $id, 'Ingreso de ' . $vehiculo['patente']);
-        Flash::exito('Ingreso registrado para la patente ' . $vehiculo['patente'] . '.');
+        Auditoria::registrar('crear', 'ingreso', $id, 'Ingreso de ' . $vehiculo['patente'] . ' en fila ' . $fila['fila']);
+        Flash::exito('Ingreso registrado para la patente ' . $vehiculo['patente'] . ' en la fila ' . $fila['fila'] . '.');
         redirigir('ingresos');
     }
 
@@ -131,6 +134,7 @@ class IngresoController
         }
 
         $minutos = Ingreso::minutosTranscurridos($ingreso);
+        $dias = Tarifa::diasCobrables($minutos);
         $monto = Ingreso::montoEstimado($ingreso, $minutos);
 
         $titulo = 'Registrar salida';
@@ -143,7 +147,7 @@ class IngresoController
         $id = (int) ($_POST['idIngreso'] ?? 0);
         $ingreso = Ingreso::porId($id);
 
-        if ($ingreso === null || $ingreso['estado'] !== 'abierto') {
+        if ($ingreso === null || $ingreso['fechaTermino'] !== null || $ingreso['estado'] !== 'abierto') {
             Flash::error('El ingreso no está abierto.');
             redirigir('ingresos');
         }
@@ -154,7 +158,7 @@ class IngresoController
         $minutos = Ingreso::minutosTranscurridos($ingreso);
         $monto = Ingreso::montoEstimado($ingreso, $minutos);
 
-        $v = (new Validador(['metodo' => $metodo, 'monto' => (string) $monto]))
+        $v = (new Validador(['metodo' => $metodo]))
             ->enLista('metodo', 'medio de pago', ['efectivo', 'debito', 'credito', 'transferencia']);
 
         if ($metodo === 'efectivo' && $recibido < $monto) {
@@ -199,7 +203,7 @@ class IngresoController
         }
 
         Auditoria::registrar('anular', 'ingreso', $id, 'Ingreso anulado de ' . $ingreso['patente']);
-        Flash::advertencia('Ingreso anulado y plaza liberada.');
+        Flash::advertencia('Ingreso anulado.');
         redirigir('ingresos');
     }
 }

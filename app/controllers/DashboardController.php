@@ -11,7 +11,16 @@ class DashboardController
 {
     public function index(): void
     {
-        $plazas = Plaza::resumen();
+        $resumenFilas = Fila::resumen();
+
+        // Claves usadas por la vista del panel.
+        $plazas = [
+            'total'    => $resumenFilas['total'],
+            'libres'   => $resumenFilas['libres'],
+            'ocupadas' => $resumenFilas['ocupadas'],
+            'fuera'    => $resumenFilas['llenas'],
+        ];
+
         $ingresosAbiertos = Ingreso::abiertos();
         $ingresosHoy = Ingreso::hoy();
         $recaudacionHoy = Ingreso::recaudacionHoy();

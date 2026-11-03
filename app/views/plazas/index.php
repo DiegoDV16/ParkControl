@@ -3,46 +3,31 @@
  * ==========================================================================
  * ParkControl · app/views/plazas/index.php
  * ==========================================================================
- * Mapa de ocupación por fila y administración de filas/plazas.
- * Variables: $filas, $plazas, $resumen.
+ * Ocupación por fila. Cada fila tiene 16 espacios sin numeración.
  * ==========================================================================
  */
 
 $titulo = $titulo ?? 'Plazas';
 $seccion = $seccion ?? 'plazas';
 require PC_APP . '/views/layout/header.php';
-
-$colores = [
-    Plaza::LIBRE => ['clase' => 'libre', 'texto' => 'Libre'],
-    Plaza::OCUPADA => ['clase' => 'ocupada', 'texto' => 'Ocupada'],
-    Plaza::FUERA_DE_SERVICIO => ['clase' => 'fuera', 'texto' => 'Fuera'],
-];
 ?>
 
-<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 mb-4">
-    <div>
-        <h2 class="h4 fw-bold mb-0">Plazas</h2>
-        <p class="text-muted mb-0 small">Estado del estacionamiento por fila o sector.</p>
-    </div>
-    <div class="d-flex gap-2">
-        <a href="<?php echo e(url('plazas/filas/crear')); ?>" class="btn btn-outline-primary">
-            <i class="bi bi-plus-square me-1"></i> Nueva fila
-        </a>
-        <a href="<?php echo e(url('plazas/crear')); ?>" class="btn btn-primary">
-            <i class="bi bi-plus-lg me-1"></i> Nueva plaza
-        </a>
-    </div>
+<div class="mb-4">
+    <h2 class="h4 fw-bold mb-0">Plazas</h2>
+    <p class="text-muted mb-0 small">
+        Disponibilidad por fila. No hay numeración: al registrar un ingreso solo se indica la fila.
+    </p>
 </div>
 
 <div class="row g-3 mb-4">
     <?php
-    $resumenTarjetas = [
-        ['Plazas totales', $resumen['total'], 'grid-3x3-gap', 'azul'],
-        ['Libres', $resumen['libres'], 'check-circle', 'verde'],
-        ['Ocupadas', $resumen['ocupadas'], 'car-front', 'rojo'],
-        ['Fuera de servicio', $resumen['fuera'], 'cone-striped', 'ambar'],
+    $tarjetas = [
+        ['Espacios totales', $resumen['total'], 'grid-3x3-gap', 'azul'],
+        ['Ocupados', $resumen['ocupadas'], 'car-front', 'rojo'],
+        ['Disponibles', $resumen['libres'], 'check-circle', 'verde'],
+        ['Filas llenas', $resumen['llenas'], 'cone-striped', 'ambar'],
     ];
-    foreach ($resumenTarjetas as [$etiqueta, $valor, $icono, $color]): ?>
+    foreach ($tarjetas as [$etiqueta, $valor, $icono, $color]): ?>
         <div class="col-6 col-lg-3">
             <div class="card pc-card h-100">
                 <div class="card-body d-flex align-items-center gap-3">
@@ -57,82 +42,51 @@ $colores = [
     <?php endforeach; ?>
 </div>
 
-<?php if ($filas === []): ?>
-    <div class="card pc-card">
-        <div class="pc-tabla-vacia">
-            <i class="bi bi-grid-3x3-gap fs-3 d-block mb-2"></i>
-            Aún no hay filas ni plazas configuradas.
-        </div>
-    </div>
-<?php endif; ?>
+<div class="row g-3">
+    <?php foreach ($filas as $fila): ?>
+        <?php
+        $capacidad = max(1, (int) $fila['capacidadTotal']);
+        $ocupadas = (int) $fila['ocupadas'];
+        $libres = max(0, $capacidad - $ocupadas);
+        $porcentaje = (int) round($ocupadas * 100 / $capacidad);
+        $llena = $ocupadas >= $capacidad;
+        ?>
+        <div class="col-12 col-md-6 col-xl-4">
+            <div class="card pc-card h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <div>
+                            <div class="pc-metrica-etiqueta">Fila</div>
+                            <div class="h4 fw-bold mb-0"><?php echo e($fila['fila']); ?></div>
+                        </div>
+                        <span class="pc-badge <?php echo $llena ? 'text-bg-danger' : 'text-bg-success'; ?>">
+                            <?php echo $llena ? 'Llena' : 'Disponible'; ?>
+                        </span>
+                    </div>
 
-<?php foreach ($plazas as $grupo): ?>
-    <div class="card pc-card mb-3">
-        <div class="card-body">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <h3 class="h6 fw-bold mb-0">
-                    <i class="bi bi-signpost-split me-1 text-primary"></i>
-                    Fila <?php echo e($grupo['fila']['fila']); ?>
-                </h3>
-                <span class="small text-muted"><?php echo count($grupo['plazas']); ?> plazas</span>
+                    <div class="d-flex justify-content-between small text-muted mb-1">
+                        <span><?php echo $ocupadas; ?> ocupados</span>
+                        <span><?php echo $libres; ?> libres de <?php echo $capacidad; ?></span>
+                    </div>
+                    <div class="progress pc-progreso mb-3" role="progressbar"
+                         aria-valuenow="<?php echo $porcentaje; ?>" aria-valuemin="0" aria-valuemax="100">
+                        <div class="progress-bar <?php echo $llena ? 'bg-danger' : 'bg-success'; ?>"
+                             style="width: <?php echo $porcentaje; ?>%"></div>
+                    </div>
+
+                    <a href="<?php echo e(url('ingresos', ['estado' => 'abierto', 'q' => $fila['fila']])); ?>"
+                       class="btn btn-sm btn-outline-primary w-100">
+                        <i class="bi bi-car-front me-1"></i> Ver ingresos de la fila
+                    </a>
+                </div>
             </div>
-
-            <div class="d-flex flex-wrap gap-2">
-                <?php foreach ($grupo['plazas'] as $plaza): ?>
-                    <?php
-                    $estado = (int) $plaza['estado'];
-                    $info = $colores[$estado] ?? $colores[Plaza::LIBRE];
-                    $bloqueada = $estado === Plaza::OCUPADA;
-                    ?>
-                    <form method="POST" action="<?php echo e(url('plazas/estado')); ?>" class="d-inline">
-                        <?php echo Csrf::campo(); ?>
-                        <input type="hidden" name="idPlaza" value="<?php echo (int) $plaza['idPlaza']; ?>">
-                        <button type="submit"
-                                class="pc-plaza pc-plaza-<?php echo e($info['clase']); ?>"
-                                <?php echo $bloqueada ? 'disabled' : ''; ?>
-                                title="<?php echo e($plaza['numero'] . ' · ' . $info['texto']); ?>">
-                            <?php echo e($plaza['numero']); ?>
-                        </button>
-                    </form>
-                <?php endforeach; ?>
-            </div>
         </div>
-    </div>
-<?php endforeach; ?>
-
-<div class="card pc-card mt-3">
-    <div class="card-body">
-        <h3 class="h6 fw-bold mb-2">Filas registradas</h3>
-        <div class="table-responsive">
-            <table class="table pc-tabla align-middle mb-0">
-                <thead>
-                    <tr>
-                        <th>Fila</th>
-                        <th>Capacidad</th>
-                        <th>Plazas creadas</th>
-                        <th>Libres</th>
-                        <th>Ocupadas</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php foreach ($filas as $f): ?>
-                        <tr>
-                            <td class="fw-semibold"><?php echo e($f['fila']); ?></td>
-                            <td><?php echo (int) $f['capacidadTotal']; ?></td>
-                            <td><?php echo (int) $f['plazas']; ?></td>
-                            <td><?php echo (int) $f['libres']; ?></td>
-                            <td><?php echo (int) $f['ocupadas']; ?></td>
-                        </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
-        </div>
-        <p class="small text-muted mt-3 mb-0">
-            <i class="bi bi-info-circle me-1"></i>
-            Haz clic en una plaza libre para ponerla fuera de servicio (o al revés). Las plazas ocupadas
-            se liberan al registrar la salida del vehículo.
-        </p>
-    </div>
+    <?php endforeach; ?>
 </div>
+
+<p class="small text-muted mt-3 mb-0">
+    <i class="bi bi-info-circle me-1"></i>
+    Una fila se marca como llena cuando sus ingresos activos alcanzan la capacidad configurada.
+</p>
 
 <?php require PC_APP . '/views/layout/footer.php'; ?>

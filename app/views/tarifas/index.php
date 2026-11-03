@@ -3,7 +3,7 @@
  * ==========================================================================
  * ParkControl · app/views/tarifas/index.php
  * ==========================================================================
- * Listado de tarifas de cobro.
+ * Tabla de precios vigente: estadía por día y servicios por tipo de vehículo.
  * ==========================================================================
  */
 
@@ -12,82 +12,89 @@ $seccion = $seccion ?? 'tarifas';
 require PC_APP . '/views/layout/header.php';
 ?>
 
-<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 mb-4">
-    <div>
-        <h2 class="h4 fw-bold mb-0">Tarifas</h2>
-        <p class="text-muted mb-0 small">Valores de cobro por hora o fracción. La tarifa activa más antigua se usa por defecto.</p>
-    </div>
-    <a href="<?php echo e(url('tarifas/crear')); ?>" class="btn btn-primary">
-        <i class="bi bi-plus-lg me-1"></i> Nueva tarifa
-    </a>
+<div class="mb-4">
+    <h2 class="h4 fw-bold mb-0">Tarifas</h2>
+    <p class="text-muted mb-0 small">
+        Precios vigentes de estadía y servicios. El cobro se calcula al registrar la salida.
+    </p>
 </div>
 
-<div class="card pc-card">
-    <div class="table-responsive">
-        <table class="table pc-tabla align-middle mb-0">
-            <thead>
-                <tr>
-                    <th>Tarifa</th>
-                    <th>Valor hora</th>
-                    <th>Fracción</th>
-                    <th>Valor fracción</th>
-                    <th>Estado</th>
-                    <th class="text-end">Acciones</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php if ($tarifas === []): ?>
-                    <tr>
-                        <td colspan="6">
-                            <div class="pc-tabla-vacia">
-                                <i class="bi bi-tags fs-3 d-block mb-2"></i>
-                                No hay tarifas registradas.
-                            </div>
-                        </td>
-                    </tr>
-                <?php endif; ?>
+<div class="row g-3">
+    <div class="col-12 col-lg-5">
+        <div class="card pc-card h-100">
+            <div class="card-body">
+                <h3 class="h6 fw-bold mb-3">Estadía por día</h3>
+                <table class="table pc-tabla align-middle mb-3">
+                    <thead>
+                        <tr>
+                            <th>Días</th>
+                            <th class="text-end">Valor</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>1 a 2 días</td>
+                            <td class="text-end pc-monto"><?php echo e(dinero(Tarifa::ESTADIA['dia_1_2'])); ?> / día</td>
+                        </tr>
+                        <tr>
+                            <td>3 a 5 días</td>
+                            <td class="text-end pc-monto"><?php echo e(dinero(Tarifa::ESTADIA['dia_3_5'])); ?> / día</td>
+                        </tr>
+                        <tr>
+                            <td>6 a 7 días</td>
+                            <td class="text-end pc-monto"><?php echo e(dinero(Tarifa::ESTADIA['fijo_6_7'])); ?> fijo</td>
+                        </tr>
+                        <tr>
+                            <td>8 días o más</td>
+                            <td class="text-end pc-monto"><?php echo e(dinero(Tarifa::ESTADIA['fijo_8_mas'])); ?> fijo</td>
+                        </tr>
+                    </tbody>
+                </table>
 
-                <?php foreach ($tarifas as $t): ?>
-                    <tr>
-                        <td class="fw-semibold"><?php echo e($t['nombre']); ?></td>
-                        <td class="pc-monto"><?php echo e(dinero($t['valorHora'])); ?></td>
-                        <td><?php echo (int) $t['fraccionMinutos']; ?> min</td>
-                        <td><?php echo $t['valorFraccion'] !== null ? e(dinero($t['valorFraccion'])) : 'Calculado'; ?></td>
-                        <td>
-                            <?php if ((int) $t['activo'] === 1): ?>
-                                <span class="pc-badge text-bg-success">Activa</span>
-                            <?php else: ?>
-                                <span class="pc-badge text-bg-secondary">Inactiva</span>
-                            <?php endif; ?>
-                        </td>
-                        <td class="text-end">
-                            <div class="d-inline-flex gap-1">
-                                <a href="<?php echo e(url('tarifas/editar', ['id' => $t['idTarifa']])); ?>"
-                                   class="btn btn-sm btn-outline-primary" title="Editar">
-                                    <i class="bi bi-pencil"></i>
-                                </a>
-                                <form method="POST" action="<?php echo e(url('tarifas/estado')); ?>" class="d-inline"
-                                      onsubmit="return confirm('¿<?php echo (int) $t['activo'] === 1 ? 'Desactivar' : 'Activar'; ?> la tarifa <?php echo e($t['nombre']); ?>?');">
-                                    <?php echo Csrf::campo(); ?>
-                                    <input type="hidden" name="idTarifa" value="<?php echo (int) $t['idTarifa']; ?>">
-                                    <button type="submit" class="btn btn-sm <?php echo (int) $t['activo'] === 1 ? 'btn-outline-danger' : 'btn-outline-success'; ?>"
-                                            title="<?php echo (int) $t['activo'] === 1 ? 'Desactivar' : 'Activar'; ?>">
-                                        <i class="bi bi-<?php echo (int) $t['activo'] === 1 ? 'pause-circle' : 'play-circle'; ?>"></i>
-                                    </button>
-                                </form>
-                            </div>
-                        </td>
-                    </tr>
-                <?php endforeach; ?>
-            </tbody>
-        </table>
+                <div class="alert alert-light border small mb-0">
+                    <i class="bi bi-info-circle me-1"></i>
+                    Una estadía de menos de un día se cobra como 1 día. Después de cada día completo
+                    se consideran 5 horas de prórroga antes de cobrar un día adicional.
+                </div>
+            </div>
+        </div>
     </div>
-</div>
 
-<div class="alert alert-light border mt-3 small mb-0">
-    <i class="bi bi-calculator me-1"></i>
-    El cobro se calcula por bloques completos de la fracción configurada.
-    Si no defines un valor por fracción, se prorratea el valor hora.
+    <div class="col-12 col-lg-7">
+        <div class="card pc-card h-100">
+            <div class="card-body">
+                <h3 class="h6 fw-bold mb-3">Servicio extra según tipo de vehículo</h3>
+                <div class="table-responsive">
+                    <table class="table pc-tabla align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>Tipo</th>
+                                <th class="text-end">Lavado</th>
+                                <th class="text-end">Lavado y aspirado</th>
+                                <th class="text-end">Aspirado</th>
+                                <th class="text-end">Sin servicio</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach (Tarifa::SERVICIOS as $tipo => $precios): ?>
+                                <tr>
+                                    <td class="fw-semibold"><?php echo e($tipo); ?></td>
+                                    <td class="text-end pc-monto"><?php echo e(dinero($precios['Lavado'])); ?></td>
+                                    <td class="text-end pc-monto"><?php echo e(dinero($precios['Lavado y aspirado'])); ?></td>
+                                    <td class="text-end pc-monto"><?php echo e(dinero($precios['Aspirado'])); ?></td>
+                                    <td class="text-end pc-monto"><?php echo e(dinero($precios['Sin servicio'])); ?></td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+
+                <p class="small text-muted mt-3 mb-0">
+                    El total de la salida es la suma de la estadía más el servicio del vehículo.
+                </p>
+            </div>
+        </div>
+    </div>
 </div>
 
 <?php require PC_APP . '/views/layout/footer.php'; ?>

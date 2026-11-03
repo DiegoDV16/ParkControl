@@ -3,8 +3,8 @@
  * ==========================================================================
  * ParkControl · app/views/ingresos/salida.php
  * ==========================================================================
- * Detalle del ingreso y registro de salida con cobro.
- * Variables: $ingreso, $minutos, $monto.
+ * Detalle del ingreso y cobro por día + servicio.
+ * Variables: $ingreso, $minutos, $dias, $monto.
  * ==========================================================================
  */
 
@@ -12,10 +12,12 @@ $titulo = $titulo ?? 'Registrar salida';
 $seccion = $seccion ?? 'ingresos';
 require PC_APP . '/views/layout/header.php';
 
-$abierto = $ingreso['estado'] === 'abierto';
-$duracion = $abierto
-    ? sprintf('%d h %02d min', intdiv($minutos, 60), $minutos % 60)
-    : sprintf('%d h %02d min', intdiv($minutos, 60), $minutos % 60);
+$abierto = $ingreso['estado'] === 'abierto' && $ingreso['fechaTermino'] === null;
+$horas = intdiv($minutos, 60);
+$minutosResto = $minutos % 60;
+$duracion = $horas > 0 ? sprintf('%d h %02d min', $horas, $minutosResto) : sprintf('%d min', $minutosResto);
+$montoEstadia = Tarifa::estadia($dias);
+$montoServicio = Tarifa::servicio((string) ($ingreso['tipoVehiculo'] ?? 'SEDAN'), (string) ($ingreso['servicioExtra'] ?? 'Sin servicio'));
 ?>
 
 <div class="mb-4">
@@ -43,12 +45,20 @@ $duracion = $abierto
                 </div>
 
                 <dl class="row mb-0 small">
-                    <dt class="col-sm-4 text-muted">Plaza</dt>
-                    <dd class="col-sm-8"><?php echo e(($ingreso['fila'] ?? '—') . ' · ' . ($ingreso['plaza'] ?? '—')); ?></dd>
+                    <dt class="col-sm-4 text-muted">Fila</dt>
+                    <dd class="col-sm-8 fw-semibold"><?php echo e($ingreso['fila']); ?></dd>
+
+                    <dt class="col-sm-4 text-muted">Tipo de vehículo</dt>
+                    <dd class="col-sm-8"><?php echo e($ingreso['tipoVehiculo'] ?? 'Sin tipo'); ?></dd>
 
                     <dt class="col-sm-4 text-muted">Entrada</dt>
+                    <dd class="col-sm-8"><?php echo e(fechaCorta($ingreso['fechaInicio']) . ' ' . horaCorta($ingreso['horaInicio'])); ?></dd>
+
+                    <dt class="col-sm-4 text-muted">Regreso programado</dt>
                     <dd class="col-sm-8">
-                        <?php echo e(fechaCorta($ingreso['fechaInicio']) . ' ' . horaCorta($ingreso['horaInicio'])); ?>
+                        <?php echo $ingreso['fechaRegreso']
+                            ? e(fechaCorta($ingreso['fechaRegreso']) . ' ' . horaCorta($ingreso['horaRegreso']))
+                            : 'Sin programar'; ?>
                     </dd>
 
                     <dt class="col-sm-4 text-muted">Salida</dt>
@@ -57,15 +67,16 @@ $duracion = $abierto
                     </dd>
 
                     <dt class="col-sm-4 text-muted">Tiempo</dt>
-                    <dd class="col-sm-8"><?php echo e($duracion); ?></dd>
+                    <dd class="col-sm-8"><?php echo e($duracion); ?> · <?php echo (int) $dias; ?> día(s) cobrable(s)</dd>
 
-                    <dt class="col-sm-4 text-muted">Tarifa</dt>
-                    <dd class="col-sm-8"><?php echo e($ingreso['tarifaNombre'] ?? 'Sin tarifa'); ?></dd>
+                    <dt class="col-sm-4 text-muted">Servicio</dt>
+                    <dd class="col-sm-8">
+                        <?php echo e($ingreso['servicioExtra'] ?? 'Sin servicio'); ?>
+                        <span class="text-muted">(<?php echo e(dinero($montoServicio)); ?>)</span>
+                    </dd>
 
-                    <?php if (!empty($ingreso['servicioExtra'])): ?>
-                        <dt class="col-sm-4 text-muted">Servicio extra</dt>
-                        <dd class="col-sm-8"><?php echo e($ingreso['servicioExtra'] . ' · ' . dinero($ingreso['servicioValor'])); ?></dd>
-                    <?php endif; ?>
+                    <dt class="col-sm-4 text-muted">Estadía</dt>
+                    <dd class="col-sm-8"><?php echo e(dinero($montoEstadia)); ?></dd>
 
                     <?php if (!empty($ingreso['numeroVuelo'])): ?>
                         <dt class="col-sm-4 text-muted">N° de vuelo</dt>
@@ -94,7 +105,9 @@ $duracion = $abierto
                     <div class="text-center mb-4">
                         <div class="pc-metrica-etiqueta">Total a cobrar</div>
                         <div class="display-6 fw-bold text-primary"><?php echo e(dinero($monto)); ?></div>
-                        <div class="small text-muted"><?php echo e($duracion); ?> de estadía</div>
+                        <div class="small text-muted">
+                            <?php echo (int) $dias; ?> día(s) + <?php echo e($ingreso['servicioExtra'] ?? 'Sin servicio'); ?>
+                        </div>
                     </div>
 
                     <form method="POST" action="<?php echo e(url('ingresos/cerrar')); ?>" novalidate>
@@ -119,7 +132,7 @@ $duracion = $abierto
                         </div>
 
                         <button type="submit" class="btn btn-success w-100">
-                            <i class="bi bi-cash-coin me-1"></i> Cobrar y liberar plaza
+                            <i class="bi bi-cash-coin me-1"></i> Cobrar y cerrar ingreso
                         </button>
                     </form>
 
@@ -161,7 +174,7 @@ $duracion = $abierto
                     <div class="pc-metrica-etiqueta">Monto cobrado</div>
                     <div class="display-6 fw-bold"><?php echo e(dinero($ingreso['montoTotal'])); ?></div>
                     <p class="text-muted small mb-0 mt-2">
-                        Este ingreso ya está <?php echo e($ingreso['estado']); ?>.
+                        Este ingreso está <?php echo e($ingreso['estado']); ?>.
                     </p>
                 </div>
             </div>

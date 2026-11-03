@@ -3,24 +3,38 @@
  * ==========================================================================
  * ParkControl · app/models/Fila.php
  * ==========================================================================
- * Filas o sectores del estacionamiento y su capacidad.
+ * Filas o sectores del estacionamiento. Cada fila tiene una capacidad fija
+ * y no se numeran las plazas: la ocupación se obtiene contando los ingresos
+ * activos (fechaTermino IS NULL).
  * ==========================================================================
  */
 
 class Fila
 {
-    /** Filas con el conteo real de plazas registradas. */
+    /** Todas las filas con su ocupación actual. */
     public static function todas(): array
     {
         $sql = 'SELECT f.idFila, f.fila, f.capacidadTotal, f.estado,
-                       COUNT(p.idPlaza) AS plazas,
-                       COALESCE(SUM(p.estado = 1), 0) AS libres,
-                       COALESCE(SUM(p.estado = 2), 0) AS ocupadas
+                       (SELECT COUNT(*) FROM ingreso i
+                        WHERE i.idFilaEstacionamiento = f.idFila
+                          AND i.fechaTermino IS NULL) AS ocupadas
                 FROM fila f
-                LEFT JOIN plaza p ON p.idFila = f.idFila
-                GROUP BY f.idFila, f.fila, f.capacidadTotal, f.estado
                 ORDER BY f.fila';
         return Database::getConexion()->query($sql)->fetchAll();
+    }
+
+    /** Filas con espacio disponible. */
+    public static function disponibles(): array
+    {
+        $filas = [];
+        foreach (self::todas() as $fila) {
+            if ((int) $fila['estado'] === 1
+                && (int) $fila['ocupadas'] < (int) $fila['capacidadTotal']) {
+                $fila['libres'] = (int) $fila['capacidadTotal'] - (int) $fila['ocupadas'];
+                $filas[] = $fila;
+            }
+        }
+        return $filas;
     }
 
     public static function porId(int $id): ?array
@@ -31,13 +45,6 @@ class Fila
         return $fila ?: null;
     }
 
-    public static function activas(): array
-    {
-        return Database::getConexion()
-            ->query('SELECT idFila, fila, capacidadTotal FROM fila WHERE estado = 1 ORDER BY fila')
-            ->fetchAll();
-    }
-
     public static function existe(string $nombre): bool
     {
         $stmt = Database::getConexion()->prepare('SELECT 1 FROM fila WHERE fila = :fila LIMIT 1');
@@ -45,33 +52,52 @@ class Fila
         return (bool) $stmt->fetchColumn();
     }
 
-    /**
-     * Crea la fila y genera automáticamente sus plazas numeradas.
-     * Devuelve el id de la fila creada.
-     */
     public static function crear(string $nombre, int $capacidad): int
     {
-        $pdo = Database::getConexion();
-        $pdo->beginTransaction();
+        $stmt = Database::getConexion()->prepare(
+            'INSERT INTO fila (fila, capacidadTotal, estado) VALUES (?, ?, 1)'
+        );
+        $stmt->execute([$nombre, $capacidad]);
+        return (int) Database::getConexion()->lastInsertId();
+    }
 
-        try {
-            $stmt = $pdo->prepare('INSERT INTO fila (fila, capacidadTotal, estado) VALUES (?, ?, 1)');
-            $stmt->execute([$nombre, $capacidad]);
-            $idFila = (int) $pdo->lastInsertId();
+    /**
+     * Resumen global de capacidad: total de espacios, ocupados y libres.
+     *
+     * @return array{filas: int, total: int, ocupadas: int, libres: int, llenas: int}
+     */
+    public static function resumen(): array
+    {
+        $total = 0;
+        $ocupadas = 0;
+        $llenas = 0;
+        $filas = self::todas();
 
-            $insertar = $pdo->prepare('INSERT INTO plaza (idFila, numero, estado) VALUES (?, ?, 1)');
-            $ancho = max(2, strlen((string) $capacidad));
-            for ($numero = 1; $numero <= $capacidad; $numero++) {
-                $insertar->execute([$idFila, $nombre . str_pad((string) $numero, $ancho, '0', STR_PAD_LEFT)]);
+        foreach ($filas as $fila) {
+            $total += (int) $fila['capacidadTotal'];
+            $ocupadas += (int) $fila['ocupadas'];
+            if ((int) $fila['ocupadas'] >= (int) $fila['capacidadTotal']) {
+                $llenas++;
             }
-
-            $pdo->commit();
-            return $idFila;
-        } catch (Throwable $error) {
-            if ($pdo->inTransaction()) {
-                $pdo->rollBack();
-            }
-            throw $error;
         }
+
+        return [
+            'filas'    => count($filas),
+            'total'    => $total,
+            'ocupadas' => $ocupadas,
+            'libres'   => max(0, $total - $ocupadas),
+            'llenas'   => $llenas,
+        ];
+    }
+
+    /** Ingresos activos dentro de una fila. */
+    public static function ocupadas(int $idFila): int
+    {
+        $stmt = Database::getConexion()->prepare(
+            'SELECT COUNT(*) FROM ingreso
+             WHERE idFilaEstacionamiento = :id AND fechaTermino IS NULL'
+        );
+        $stmt->execute([':id' => $idFila]);
+        return (int) $stmt->fetchColumn();
     }
 }

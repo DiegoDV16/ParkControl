@@ -3,7 +3,7 @@
  * ==========================================================================
  * ParkControl · app/views/ingresos/form.php
  * ==========================================================================
- * Registro de entrada de un vehículo.
+ * Registro de entrada: cliente, vehículo, fila y datos opcionales.
  * ==========================================================================
  */
 
@@ -18,7 +18,6 @@ foreach ($vehiculos as $v) {
     $vehiculosJson[] = [
         'idVehiculo' => (int) $v['idVehiculo'],
         'idCliente'  => (int) ($v['idCliente'] ?? 0),
-        'patente'    => $v['patente'],
         'etiqueta'   => $v['patente'] . ' · ' . $v['marca'] . ' ' . $v['modelo'],
     ];
 }
@@ -31,10 +30,10 @@ foreach ($vehiculos as $v) {
     <h2 class="h4 fw-bold mt-2 mb-0">Registrar ingreso</h2>
 </div>
 
-<?php if ($plazas === []): ?>
+<?php if ($filas === []): ?>
     <div class="alert alert-warning">
         <i class="bi bi-exclamation-triangle me-1"></i>
-        No hay plazas libres disponibles. Libera una plaza o revisa la configuración.
+        Todas las filas están completas. Registra una salida para liberar espacio.
     </div>
 <?php endif; ?>
 
@@ -70,45 +69,45 @@ foreach ($vehiculos as $v) {
                 </div>
 
                 <div class="col-12 col-md-6">
-                    <label for="idPlaza" class="form-label">Plaza <span class="text-danger">*</span></label>
-                    <select class="form-select <?php echo isset($errores['idPlaza']) ? 'is-invalid' : ''; ?>"
-                            id="idPlaza" name="idPlaza" required>
-                        <option value="">Selecciona una plaza libre</option>
-                        <?php foreach ($plazas as $p): ?>
-                            <option value="<?php echo (int) $p['idPlaza']; ?>"
-                                <?php echo (int) ($old['idPlaza'] ?? 0) === (int) $p['idPlaza'] ? 'selected' : ''; ?>>
-                                <?php echo e($p['fila'] . ' · ' . $p['numero']); ?>
+                    <label for="idFila" class="form-label">Fila <span class="text-danger">*</span></label>
+                    <select class="form-select <?php echo isset($errores['idFila']) ? 'is-invalid' : ''; ?>"
+                            id="idFila" name="idFila" required>
+                        <option value="">Selecciona una fila</option>
+                        <?php foreach ($filas as $f): ?>
+                            <option value="<?php echo (int) $f['idFila']; ?>"
+                                <?php echo (int) ($old['idFila'] ?? 0) === (int) $f['idFila'] ? 'selected' : ''; ?>>
+                                Fila <?php echo e($f['fila']); ?> · <?php echo (int) $f['libres']; ?> espacios libres
                             </option>
                         <?php endforeach; ?>
                     </select>
-                    <?php if (isset($errores['idPlaza'])): ?><div class="invalid-feedback"><?php echo e($errores['idPlaza']); ?></div><?php endif; ?>
-                </div>
-
-                <div class="col-12 col-md-6">
-                    <label for="idTarifa" class="form-label">Tarifa <span class="text-danger">*</span></label>
-                    <select class="form-select <?php echo isset($errores['idTarifa']) ? 'is-invalid' : ''; ?>"
-                            id="idTarifa" name="idTarifa" required>
-                        <?php foreach ($tarifas as $t): ?>
-                            <option value="<?php echo (int) $t['idTarifa']; ?>"
-                                <?php echo (int) ($old['idTarifa'] ?? ($tarifaDefecto['idTarifa'] ?? 0)) === (int) $t['idTarifa'] ? 'selected' : ''; ?>>
-                                <?php echo e($t['nombre'] . ' · ' . dinero($t['valorHora']) . '/hora'); ?>
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
-                    <?php if (isset($errores['idTarifa'])): ?><div class="invalid-feedback"><?php echo e($errores['idTarifa']); ?></div><?php endif; ?>
+                    <?php if (isset($errores['idFila'])): ?><div class="invalid-feedback"><?php echo e($errores['idFila']); ?></div><?php endif; ?>
                 </div>
 
                 <div class="col-12 col-md-6">
                     <label for="idServicioExtra" class="form-label">Servicio extra</label>
                     <select class="form-select" id="idServicioExtra" name="idServicioExtra">
-                        <option value="0">Sin servicio extra</option>
                         <?php foreach ($servicios as $s): ?>
                             <option value="<?php echo (int) $s['idServicioExtra']; ?>"
                                 <?php echo (int) ($old['idServicioExtra'] ?? 0) === (int) $s['idServicioExtra'] ? 'selected' : ''; ?>>
-                                <?php echo e($s['servicioExtra'] . ' · ' . dinero($s['valor'])); ?>
+                                <?php echo e($s['servicioExtra']); ?>
                             </option>
                         <?php endforeach; ?>
                     </select>
+                    <div class="form-text">El precio depende del tipo de vehículo (ver Tarifas).</div>
+                </div>
+
+                <div class="col-6 col-md-6">
+                    <label for="fechaRegreso" class="form-label">Fecha de regreso</label>
+                    <input type="date" class="form-control <?php echo isset($errores['fechaRegreso']) ? 'is-invalid' : ''; ?>"
+                           id="fechaRegreso" name="fechaRegreso" min="<?php echo date('Y-m-d'); ?>"
+                           value="<?php echo e($old['fechaRegreso'] ?? ''); ?>">
+                    <?php if (isset($errores['fechaRegreso'])): ?><div class="invalid-feedback"><?php echo e($errores['fechaRegreso']); ?></div><?php endif; ?>
+                </div>
+
+                <div class="col-6 col-md-6">
+                    <label for="horaRegreso" class="form-label">Hora de regreso</label>
+                    <input type="time" class="form-control" id="horaRegreso" name="horaRegreso"
+                           value="<?php echo e($old['horaRegreso'] ?? ''); ?>">
                 </div>
 
                 <div class="col-12 col-md-6">
@@ -117,7 +116,7 @@ foreach ($vehiculos as $v) {
                            maxlength="12" placeholder="Opcional" value="<?php echo e($old['numeroVuelo'] ?? ''); ?>">
                 </div>
 
-                <div class="col-12">
+                <div class="col-12 col-md-6 d-flex align-items-end">
                     <div class="form-check">
                         <input class="form-check-input" type="checkbox" id="llaves" name="llaves" value="1"
                             <?php echo !empty($old['llaves']) ? 'checked' : ''; ?>>
@@ -128,12 +127,12 @@ foreach ($vehiculos as $v) {
                 <div class="col-12">
                     <label for="observacion" class="form-label">Observaciones</label>
                     <textarea class="form-control" id="observacion" name="observacion" rows="2"
-                              maxlength="1000"><?php echo e($old['observacion'] ?? ''); ?></textarea>
+                              maxlength="500"><?php echo e($old['observacion'] ?? ''); ?></textarea>
                 </div>
             </div>
 
             <div class="d-flex gap-2 mt-4">
-                <button type="submit" class="btn btn-primary" <?php echo $plazas === [] ? 'disabled' : ''; ?>>
+                <button type="submit" class="btn btn-primary" <?php echo $filas === [] ? 'disabled' : ''; ?>>
                     <i class="bi bi-check-lg me-1"></i> Registrar ingreso
                 </button>
                 <a href="<?php echo e(url('ingresos')); ?>" class="btn btn-outline-secondary">Cancelar</a>
