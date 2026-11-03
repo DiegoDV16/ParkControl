@@ -36,7 +36,7 @@ $accion = $esEdicion ? url('usuarios/actualizar') : url('usuarios/crear');
         <form method="POST" action="<?php echo e($accion); ?>" novalidate>
             <?php echo Csrf::campo(); ?>
             <?php if ($esEdicion): ?>
-                <input type="hidden" name="idUsuario" value="<?php echo (int) $usuario['idUsuario']; ?>">
+                <input type="hidden" name="idUsuario" value="<?php echo (int) ($usuario['idUsuario'] ?? 0); ?>">
             <?php endif; ?>
 
             <div class="row g-3">
