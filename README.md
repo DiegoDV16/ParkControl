@@ -1,156 +1,180 @@
 # ParkControl
 
-Sistema de control de estacionamiento. Este proyecto usa una arquitectura
-MVC clásica en PHP. La rama actual (`feature/ui`) contiene la maqueta de la
-interfaz (front-end) construida con **Bootstrap 5.3** + CSS propio.
+Sistema de control de estacionamiento desarrollado en **PHP 8.2 clásico con
+arquitectura MVC**, **MySQL/MariaDB** y **Bootstrap 5.3**. La interfaz está en
+español y usa los estilos propios `pc-` del proyecto.
 
 ---
 
-## Cómo previsualizar
+## Requisitos
 
-Usa el servidor de XAMPP (Apache) apuntando a esta carpeta:
+| Componente | Versión usada |
+|---|---|
+| PHP | 8.2.12 (XAMPP) con `pdo_mysql` |
+| MySQL / MariaDB | MariaDB 10.4.32 (XAMPP) |
+| Apache | XAMPP (mod_rewrite no es necesario) |
+| Navegador | Cualquiera moderno |
 
-| Pantalla      | URL                                         | Descripción                              |
-|---------------|---------------------------------------------|------------------------------------------|
-| Login         | `http://localhost/ParkControl/app/views/login.php` | Inicio de sesión (página completa) |
-| Recuperar contraseña | `http://localhost/ParkControl/app/views/recuperar_contrasena.php` | Recuperación de acceso (página completa) |
-| Inicio        | `http://localhost/ParkControl/app/index.php`        | Página de inicio con sidebar + bienvenida |
-
-> Consejo: abre la vista responsive del navegador (F12 → modo dispositivo)
-> para probar el comportamiento móvil.
+No requiere Composer ni Laravel.
 
 ---
 
-## Estructura del proyecto
+## Instalación
 
-```
+1. Copia la plantilla de configuración y ajusta las credenciales de MySQL:
+
+   ```text
+   app/config/config.local.example.php  →  app/config/config.local.php
+   ```
+
+   `config.local.php` **no se versiona** (está en `.gitignore`).
+
+2. Aplica el esquema y los datos iniciales:
+
+   ```powershell
+   C:\xampp\php\php.exe database\migrate.php
+   ```
+
+   El comando es idempotente: registra lo aplicado en `schema_migrations` y no
+   borra datos. Para ver el estado: `database\migrate.php --estado`.
+
+3. Abre la aplicación:
+
+   ```text
+   http://localhost/ParkControl/
+   ```
+
+   La raíz redirige al front controller `app/index.php`.
+
+### Credenciales iniciales
+
+El seeder restablece la contraseña del primer usuario con rol **Administrador**
+y la imprime en consola (o usa `PARKCONTROL_ADMIN_PASS` para fijarla). Cámbiala
+después del primer ingreso.
+
+---
+
+## Estructura
+
+```text
 ParkControl/
+├── index.php                    # Redirige a app/index.php
 ├── app/
-│   ├── .htaccess                 # Permite ver la UI (ver "Seguridad" abajo)
-│   ├── index.php                 # Página de inicio (usa header/footer)
+│   ├── index.php                # Front controller (único punto de entrada)
+│   ├── bootstrap.php            # Configuración, sesión, autocarga, helpers
+│   ├── routes.php               # Tabla de rutas
 │   ├── config/
-│   │   ├── .htaccess             # Bloquea el acceso a config
-│   │   └── conexion.php          # Conexión PDO a la BD (credenciales)
-│   ├── assets/
-│   │   ├── css/styles.css        # Estilos propios + tokens de diseño
-│   │   ├── js/main.js            # Helpers JS (cierre del menú móvil)
-│   │   └── img/logo.svg          # Logo de ParkControl
-│   └── views/
-│       ├── header.php            # CABECERA compartida: <head>, CDN, sidebar, topbar
-│       ├── footer.php            # PIE compartido: cierra la página y carga scripts
-│       ├── login.php             # Pantalla de login (página completa, sin sidebar)
-│       └── ...                   # (tus vistas: vehiculos.php, clientes.php, etc.)
-└── README.md                     # Esta documentación
+│   │   ├── config.php           # Configuración base (sin secretos)
+│   │   ├── config.local.php     # Credenciales locales (ignorado por git)
+│   │   ├── config.local.example.php
+│   │   └── conexion.php         # PDO singleton (clase Database)
+│   ├── core/                    # Router, Auth, Csrf, Flash, Validador, Rut, helpers
+│   ├── controllers/             # Controladores por módulo
+│   ├── models/                  # Acceso a datos con consultas preparadas
+│   ├── views/
+│   │   ├── layout/              # header.php y footer.php compartidos
+│   │   ├── auth/                # login
+│   │   ├── dashboard/           # panel
+│   │   └── errores/             # 403, 404, 500
+│   └── assets/                  # css, js e imágenes
+├── database/
+│   ├── migrate.php              # Aplicador de migraciones y seeds
+│   ├── migrations/              # Cambios de esquema versionados (.sql)
+│   └── seeds/                   # Datos iniciales (.php)
+└── docs/                        # Documentación adicional
 ```
 
----
+### Flujo de una petición
 
-## Cómo crear una vista (patrón header/footer)
-
-Cada vista con menú es un archivo PHP dentro de `app/views/` que **incluye**
-la cabecera al inicio y el pie al final. La cabecera aporta el `<head>` con
-todos los enlaces/CDN, el sidebar (fijo en desktop / *offcanvas* en móvil) y
-el topbar; el pie cierra la página y carga los scripts (Bootstrap JS + main.js).
-
-Esquema mínimo de una vista (ej. `app/views/administrador.php`):
-
-```php
-<?php
-$titulo  = 'Administración';   // Título del topbar y de la pestaña
-$seccion = 'inicio';           // Ítem del menú que quedará resaltado
-include 'header.php';          // Abre <html>, carga CDN, dibuja sidebar/topbar
-?>
-
-<!-- Contenido propio de la vista (sin <html>, sin sidebar) -->
-<h2>Hola, este es mi módulo</h2>
-
-<?php include 'footer.php'; ?>
+```text
+index.php?ruta=usuarios
+  → app/index.php (front controller)
+    → Router (método + ruta + permisos + CSRF)
+      → Controlador
+        → Modelo (PDO, consultas preparadas)
+          → Vista (escapa con e())
 ```
 
-### Variables opcionales de la vista
-
-| Variable   | Valores posibles (por defecto `inicio`)         | Para qué sirve                          |
-|------------|--------------------------------------------------|------------------------------------------|
-| `$titulo`  | cualquier texto (por defecto `'Inicio'`)        | Título del topbar y de la pestaña        |
-| `$seccion` | `inicio`, `vehiculos`, `plazas`, `clientes`, `tarifas`, `reportes`, `configuracion` | Ítem del menú lateral resaltado |
-
-### Reglas
-
-1. El archivo va dentro de `app/views/` y comienza con un comentario de
-   cabecera explicando su propósito (revisa `app/index.php` como ejemplo).
-2. Define `$titulo` y `$seccion` **antes** de `include 'header.php';`.
-3. Escribe el contenido entre `include 'header.php';` y `include 'footer.php';`.
-4. Para activar su enlace en el menú: en `app/views/header.php` cambia el
-   `href="#"` de ese ítem por la URL de la vista y quita la clase
-   `deshabilitado`.
-5. `login.php` es la excepción: no lleva sidebar, por eso es una página
-   completa independiente y **no** usa header/footer.
+Las rutas se declaran en [app/routes.php](app/routes.php) con
+`['auth' => false]` para el login y `['rol' => 1]` para secciones de
+administrador.
 
 ---
 
-## Paleta de colores (tokens)
+## Roles
 
-Los colores se definen como variables CSS en `app/assets/css/styles.css` y se
-reutilizan en todo el sistema. También se sobrescriben los tokens nativos de
-Bootstrap (`--bs-primary`, `--bs-success`, etc.) para que los componentes
-estándar hereden la identidad del sistema sin `!important`.
+| idRol | Rol | Alcance |
+|---|---|---|
+| 1 | Administrador | Todos los módulos, usuarios, tarifas, reportes y configuración |
+| 2 | Operador | Operación diaria: ingresos, plazas, clientes y vehículos |
 
-| Variable        | Valor       | Uso                                   |
-|-----------------|-------------|---------------------------------------|
-| `--pc-azul-900` | `#0b2545`   | Sidebar y fondo del panel de marca    |
-| `--pc-azul-700` | `#0a6dbd`   | Azul primario (botones, enlaces)      |
-| `--pc-azul-500` | `#0e8fd4`   | Azul claro (degradados, acentos)      |
-| `--pc-verde`    | `#1e9e5a`   | Éxito / disponible                    |
-| `--pc-rojo`     | `#d64545`   | Error / no disponible                 |
-| `--pc-ambar`    | `#f5a623`   | Advertencia / pendiente               |
-| `--pc-fondo`    | `#f4f7fb`   | Fondo del contenido                   |
+El estado de cada usuario (`usuario.estado`) permite desactivar cuentas sin
+borrarlas.
 
 ---
 
-## Clases y componentes reutilizables
+## Estado de los módulos
 
-| Clase                        | Para qué sirve                             |
-|------------------------------|--------------------------------------------|
-| `.pc-app`                    | Grid principal: sidebar + contenido        |
-| `.pc-sidebar` / `.pc-nav-link` | Sidebar y sus enlaces (`.activo`, `.deshabilitado`) |
-| `.pc-sidebar-offcanvas`      | Menú móvil (offcanvas)                     |
-| `.pc-topbar`                 | Barra superior con título y acciones       |
-| `.pc-contenido`              | Contenedor donde se incluyen las vistas    |
-| `.pc-card`                   | Card con la sombra y radio del sistema     |
-| `.pc-card-icono.azul/verde/rojo/ambar` | Icono circular de color para módulos/métricas |
-| `.pc-avatar`                 | Avatar circular del usuario                |
-| `.pc-badge`                  | Etiqueta de estado (usa `text-bg-*` de Bootstrap) |
-| `.pc-login-*`                | Componentes de la pantalla de login        |
+| Módulo | Estado |
+|---|---|
+| Autenticación, sesión y CSRF | ✅ Implementado |
+| Panel con métricas reales | ✅ Implementado |
+| Usuarios (CRUD) | ⏳ En desarrollo |
+| Clientes y vehículos | ⏳ En desarrollo |
+| Plazas y tarifas | ⏳ En desarrollo |
+| Ingresos, cobro y pagos | ⏳ En desarrollo |
+| Reportes | ⏳ En desarrollo |
+| Configuración | ⏳ En desarrollo |
 
 ---
 
-## Responsive
+## Base de datos
 
-- **Desktop (≥ 992px):** sidebar fijo a la izquierda + topbar + contenido.
-- **Tablet/Móvil (< 992px):** el sidebar se oculta y el menú se abre como
-  *offcanvas* con el botón hamburguesa del topbar. Al pulsar un enlace se
-  cierra solo (ver `app/assets/js/main.js`).
-- **Móvil (< 576px):** en el login se oculta el panel de marca y solo se ve
-  el formulario; en el layout, las cards se apilan.
+Tablas del negocio: `cliente`, `vehiculo`, `marca`, `modelo`, `fila`, `plaza`,
+`ingreso`, `servicioextra`, `tarifa`, `pago`, `usuario`, `rol`,
+`configuracion`, `auditoria` y `schema_migrations`.
+
+Los cambios de esquema se hacen **siempre** con un archivo nuevo en
+`database/migrations/` (nunca editando la base a mano) y se aplican con
+`database/migrate.php`. Las migraciones son aditivas y conservan los datos.
+
+### Incidencia conocida del entorno local
+
+Las tablas de privilegios de este MySQL (`mysql.db` y `mysql.proxies_priv`)
+estaban corruptas y se reconstruyeron; por eso la conexión local usa `root`
+sin contraseña (ver `app/config/config.local.php`). En un servidor real:
+
+1. Crear un usuario dedicado:
+   ```sql
+   CREATE USER 'parkcontrol_app'@'localhost' IDENTIFIED BY '...';
+   GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, ALTER, INDEX, REFERENCES
+     ON parkcontrol.* TO 'parkcontrol_app'@'localhost';
+   ```
+2. Actualizar `config.local.php` con esas credenciales.
+3. Poner `app.depuracion` en `false`.
+
+Los respaldos de las tablas dañadas están en la carpeta temporal del sistema
+(`%TEMP%\parkcontrol-mysql-backup`).
 
 ---
 
 ## Seguridad
 
-- `app/config/.htaccess` bloquea el acceso directo a `config/` (credenciales).
-- `app/config/conexion.php` está en `.gitignore` (no se sube al repositorio).
-- `app/.htaccess` fue ajustado a `Require all granted` **solo para poder
-  previsualizar la UI durante el desarrollo**. Cuando exista el enrutador del
-  MVC, vuelve a restringir el acceso a los directorios internos
-  (controladores, modelos, config) y deja únicamente expuesto el punto de
-  entrada público.
+- Consultas preparadas en todos los modelos; sin SQL en las vistas.
+- Escape de salida con `e()` y token CSRF en cada formulario POST.
+- Contraseñas con `password_hash()` / `password_verify()` y rehash automático.
+- Sesión con cookie `HttpOnly` + `SameSite=Lax`, expiración por inactividad y
+  bloqueo temporal tras 5 intentos fallidos.
+- Los errores internos no se muestran con `app.depuracion = false`.
+- `app/config/` está bloqueado por `.htaccess` y las credenciales viven fuera
+  del repositorio.
 
 ---
 
 ## Convenciones
 
-- Textos e interfaces en **español**.
-- Cada archivo PHP/HTML/CSS/JS inicia con un comentario de cabecera que
-  explica qué es y para qué sirve.
-- Los estilos propios usan el prefijo `pc-` para no chocar con Bootstrap.
-- Se usa Bootstrap vía CDN (no requiere instalación local).
+- Textos e interfaz en **español**.
+- Cada archivo inicia con un comentario de cabecera que explica su propósito.
+- Estilos propios con prefijo `pc-`; se reutilizan los tokens de
+  `app/assets/css/styles.css`.
+- Controladores delgados, modelos con PDO, vistas sin SQL.
