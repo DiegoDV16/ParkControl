@@ -28,8 +28,8 @@ $menu = [
     ['ruta' => 'vehiculos', 'texto' => 'Vehículos',     'icono' => 'car-front',           'rol' => [1, 2], 'pronto' => false],
     ['ruta' => 'tarifas',   'texto' => 'Tarifas',       'icono' => 'tags',                'rol' => [1],    'pronto' => false],
     ['ruta' => 'usuarios',  'texto' => 'Usuarios',      'icono' => 'person-gear',         'rol' => [1],    'pronto' => false],
-    ['ruta' => 'reportes',  'texto' => 'Reportes',      'icono' => 'file-earmark-bar-graph', 'rol' => [1], 'pronto' => true],
-    ['ruta' => 'configuracion', 'texto' => 'Configuración', 'icono' => 'gear',           'rol' => [1],    'pronto' => true],
+    ['ruta' => 'reportes',  'texto' => 'Reportes',      'icono' => 'file-earmark-bar-graph', 'rol' => [1], 'pronto' => false],
+    ['ruta' => 'configuracion', 'texto' => 'Configuración', 'icono' => 'gear',           'rol' => [1],    'pronto' => false],
 ];
 
 /** Pinta el menú (dos veces: sidebar fijo y offcanvas móvil). */
