@@ -59,4 +59,12 @@ return static function (Router $router): void {
     $router->get('tarifas/editar', [TarifaController::class, 'editar'], ['rol' => 1]);
     $router->post('tarifas/actualizar', [TarifaController::class, 'actualizar'], ['rol' => 1]);
     $router->post('tarifas/estado', [TarifaController::class, 'estado'], ['rol' => 1]);
+
+    // Ingresos y cobros
+    $router->get('ingresos', [IngresoController::class, 'index']);
+    $router->get('ingresos/crear', [IngresoController::class, 'crear']);
+    $router->post('ingresos/crear', [IngresoController::class, 'guardar']);
+    $router->get('ingresos/salida', [IngresoController::class, 'salida']);
+    $router->post('ingresos/cerrar', [IngresoController::class, 'cerrar']);
+    $router->post('ingresos/anular', [IngresoController::class, 'anular']);
 };
