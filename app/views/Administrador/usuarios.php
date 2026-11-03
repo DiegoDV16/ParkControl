@@ -24,16 +24,6 @@ if ((int)$_SESSION['usuario']['rol'] !== 1) {
     exit;
 }
 
-// ==========================================================================
-// TODO (lógica): procesar aquí las acciones POST del formulario.
-//   · accion = "crear"        → INSERT INTO usuario ...
-//   · accion = "cambiar_rol"  → UPDATE usuario SET idRol = :rol WHERE idUsuario = :id
-//   · accion = "eliminar"     → DELETE FROM usuario WHERE idUsuario = :id
-//   Antes de guardar: validar, aplicar password_hash() y reutilizar Database::getConexion().
-// ==========================================================================
-
-// Rótulos de los roles para la maqueta.
-// Ajusta según el catálogo de la BD (actualmente: 1=administra, 2=Administrador).
 $roles = [1 => 'Administrador', 2 => 'Operador'];
 
 // Datos de ejemplo para la maqueta (reemplaza por tu consulta a la BD).
@@ -170,7 +160,7 @@ include __DIR__ . '/../header.php';
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <!-- TODO: al enviar, procesa el INSERT en la parte superior del archivo -->
+                    
                     <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> Crear usuario</button>
                 </div>
             </form>
@@ -178,7 +168,6 @@ include __DIR__ . '/../header.php';
     </div>
 </div>
 
-<!-- ===== Modal: Editar rol ===== -->
 <div class="modal fade" id="modalEditarRol" tabindex="-1" aria-labelledby="modalEditarRolTitulo" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
@@ -200,7 +189,7 @@ include __DIR__ . '/../header.php';
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <!-- TODO: al enviar, procesa el UPDATE del rol -->
+                    
                     <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> Guardar rol</button>
                 </div>
             </form>
