@@ -496,3 +496,45 @@ body {
         padding: .6rem 1rem;
     }
 }
+
+/* --------------------------------------------------------------------------
+   9. PANEL E INDICADORES
+   Tarjetas de métricas, barra de ocupación y estados vacíos de tablas.
+   -------------------------------------------------------------------------- */
+.pc-metrica-etiqueta {
+    font-size: .72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    color: #64748b;
+}
+
+.pc-metrica-valor {
+    font-size: 1.65rem;
+    font-weight: 700;
+    line-height: 1.15;
+    color: var(--pc-azul-900);
+}
+
+.pc-progreso {
+    height: .6rem;
+    border-radius: 1rem;
+    background-color: #e9eef6;
+}
+
+.pc-tabla-vacia {
+    padding: 2.5rem 1rem;
+    text-align: center;
+    color: #64748b;
+}
+
+/* Celdas numéricas de tablas y formularios compactos */
+.pc-tabla .pc-monto {
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+}
+
+/* Tarjeta de formulario (altas y ediciones) */
+.pc-form-card {
+    max-width: 720px;
+}
