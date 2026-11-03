@@ -23,10 +23,10 @@ $rolTexto = $rol === 1 ? 'Administrador' : 'Operador';
 $menu = [
     ['ruta' => 'dashboard', 'texto' => 'Inicio',        'icono' => 'speedometer2',        'rol' => [1, 2], 'pronto' => false],
     ['ruta' => 'ingresos',  'texto' => 'Ingresos',      'icono' => 'car-front',           'rol' => [1, 2], 'pronto' => true],
-    ['ruta' => 'plazas',    'texto' => 'Plazas',        'icono' => 'grid-3x3-gap',        'rol' => [1, 2], 'pronto' => true],
+    ['ruta' => 'plazas',    'texto' => 'Plazas',        'icono' => 'grid-3x3-gap',        'rol' => [1, 2], 'pronto' => false],
     ['ruta' => 'clientes',  'texto' => 'Clientes',      'icono' => 'people',              'rol' => [1, 2], 'pronto' => false],
     ['ruta' => 'vehiculos', 'texto' => 'Vehículos',     'icono' => 'car-front',           'rol' => [1, 2], 'pronto' => false],
-    ['ruta' => 'tarifas',   'texto' => 'Tarifas',       'icono' => 'tags',                'rol' => [1],    'pronto' => true],
+    ['ruta' => 'tarifas',   'texto' => 'Tarifas',       'icono' => 'tags',                'rol' => [1],    'pronto' => false],
     ['ruta' => 'usuarios',  'texto' => 'Usuarios',      'icono' => 'person-gear',         'rol' => [1],    'pronto' => false],
     ['ruta' => 'reportes',  'texto' => 'Reportes',      'icono' => 'file-earmark-bar-graph', 'rol' => [1], 'pronto' => true],
     ['ruta' => 'configuracion', 'texto' => 'Configuración', 'icono' => 'gear',           'rol' => [1],    'pronto' => true],

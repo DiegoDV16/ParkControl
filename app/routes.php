@@ -30,8 +30,7 @@ return static function (Router $router): void {
     $router->post('usuarios/restablecer', [UsuarioController::class, 'restablecer'], ['rol' => 1]);
 
     // Clientes (administración y operación)
-    $router->get('clientes', [ClienteController::class, 'index']);
-    $router->get('clientes/crear', [ClienteController::class, 'crear']);
+    $router->get('clientes', [ClienteController::class, 'index']);    $router->get('clientes/crear', [ClienteController::class, 'crear']);
     $router->post('clientes/crear', [ClienteController::class, 'guardar']);
     $router->get('clientes/editar', [ClienteController::class, 'editar']);
     $router->post('clientes/actualizar', [ClienteController::class, 'actualizar']);
@@ -44,4 +43,20 @@ return static function (Router $router): void {
     $router->get('vehiculos/editar', [VehiculoController::class, 'editar']);
     $router->post('vehiculos/actualizar', [VehiculoController::class, 'actualizar']);
     $router->post('vehiculos/eliminar', [VehiculoController::class, 'eliminar']);
+
+    // Plazas y filas
+    $router->get('plazas', [PlazaController::class, 'index']);
+    $router->get('plazas/crear', [PlazaController::class, 'crear']);
+    $router->post('plazas/crear', [PlazaController::class, 'guardar']);
+    $router->post('plazas/estado', [PlazaController::class, 'estado']);
+    $router->get('plazas/filas/crear', [PlazaController::class, 'crearFila']);
+    $router->post('plazas/filas/crear', [PlazaController::class, 'guardarFila']);
+
+    // Tarifas (solo administración)
+    $router->get('tarifas', [TarifaController::class, 'index'], ['rol' => 1]);
+    $router->get('tarifas/crear', [TarifaController::class, 'crear'], ['rol' => 1]);
+    $router->post('tarifas/crear', [TarifaController::class, 'guardar'], ['rol' => 1]);
+    $router->get('tarifas/editar', [TarifaController::class, 'editar'], ['rol' => 1]);
+    $router->post('tarifas/actualizar', [TarifaController::class, 'actualizar'], ['rol' => 1]);
+    $router->post('tarifas/estado', [TarifaController::class, 'estado'], ['rol' => 1]);
 };
