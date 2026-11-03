@@ -42,10 +42,10 @@ function asset(string $ruta): string
     return BASE_URL . '/assets/' . ltrim($ruta, '/');
 }
 
-/** Redirige a una ruta interna y detiene la ejecución. */
-function redirigir(string $ruta): never
+/** Redirige a una ruta interna (con parámetros opcionales) y detiene la ejecución. */
+function redirigir(string $ruta, array $parametros = []): never
 {
-    header('Location: ' . url($ruta));
+    header('Location: ' . url($ruta, $parametros));
     exit;
 }
 

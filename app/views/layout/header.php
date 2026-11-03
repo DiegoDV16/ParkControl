@@ -27,7 +27,7 @@ $menu = [
     ['ruta' => 'clientes',  'texto' => 'Clientes',      'icono' => 'people',              'rol' => [1, 2], 'pronto' => true],
     ['ruta' => 'vehiculos', 'texto' => 'Vehículos',     'icono' => 'car-front',           'rol' => [1, 2], 'pronto' => true],
     ['ruta' => 'tarifas',   'texto' => 'Tarifas',       'icono' => 'tags',                'rol' => [1],    'pronto' => true],
-    ['ruta' => 'usuarios',  'texto' => 'Usuarios',      'icono' => 'person-gear',         'rol' => [1],    'pronto' => true],
+    ['ruta' => 'usuarios',  'texto' => 'Usuarios',      'icono' => 'person-gear',         'rol' => [1],    'pronto' => false],
     ['ruta' => 'reportes',  'texto' => 'Reportes',      'icono' => 'file-earmark-bar-graph', 'rol' => [1], 'pronto' => true],
     ['ruta' => 'configuracion', 'texto' => 'Configuración', 'icono' => 'gear',           'rol' => [1],    'pronto' => true],
 ];
