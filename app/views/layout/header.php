@@ -22,7 +22,7 @@ $rolTexto = $rol === 1 ? 'Administrador' : 'Operador';
  */
 $menu = [
     ['ruta' => 'dashboard', 'texto' => 'Inicio',        'icono' => 'speedometer2',        'rol' => [1, 2], 'pronto' => false],
-    ['ruta' => 'ingresos',  'texto' => 'Ingresos',      'icono' => 'car-front',           'rol' => [1, 2], 'pronto' => true],
+    ['ruta' => 'ingresos',  'texto' => 'Ingresos',      'icono' => 'car-front',           'rol' => [1, 2], 'pronto' => false],
     ['ruta' => 'plazas',    'texto' => 'Plazas',        'icono' => 'grid-3x3-gap',        'rol' => [1, 2], 'pronto' => false],
     ['ruta' => 'clientes',  'texto' => 'Clientes',      'icono' => 'people',              'rol' => [1, 2], 'pronto' => false],
     ['ruta' => 'vehiculos', 'texto' => 'Vehículos',     'icono' => 'car-front',           'rol' => [1, 2], 'pronto' => false],
