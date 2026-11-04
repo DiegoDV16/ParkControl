@@ -196,7 +196,7 @@ class Ingreso
         try {
             $stmt = $pdo->prepare(
                 "UPDATE ingreso
-                 SET fechaTermino = CURDATE(), horaTermino = CURTIME(), montoTotal = :monto
+                 SET fechaTermino = CURDATE(), horaTermino = NOW(), montoTotal = :monto
                  WHERE idIngreso = :id AND fechaTermino IS NULL AND estado = 'abierto'"
             );
             $stmt->execute([':monto' => $monto, ':id' => $id]);

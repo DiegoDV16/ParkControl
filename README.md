@@ -159,8 +159,19 @@ vehículo (SEDAN, HATCHBACK, CAMIONETA, SUV), con la matriz de precios de
 Lavado, Lavado y aspirado, Aspirado y Sin servicio. El monto se calcula al
 registrar la salida y queda en `ingreso.montoTotal` y `pago`.
 
-Las tablas `plaza` y `tarifa` quedaron como legado del primer prototipo y ya
-no se usan; el modelo vigente está en `tipovehiculo`, `fila` e `ingreso`.
+### Tabla `ingreso`
+
+La tabla `ingreso` sigue el diagrama `ParkControl.drawio`: `idServicioExtra`,
+`idUsuario`, `idVehiculo`, `idFilaEstacionamiento`, `idCliente`, `fechaInicio`,
+`horaInicio`, `fechaTermino`, `horaTermino`, `numeroVuelo`, `llaves` y
+`observacion`. La migración 003 eliminó las columnas `idPlaza`/`idTarifa` y las
+tablas `plaza` y `tarifa` del prototipo anterior.
+
+Se mantienen algunas columnas adicionales necesarias para la operación:
+`fechaRegreso`/`horaRegreso` (regreso programado), `montoTotal`, `estado` y
+`creadoEn`. Al registrar un ingreso se inserta una fila en `ingreso`; al
+cerrarlo se completan `fechaTermino`, `horaTermino` y `montoTotal`, y se
+registra el cobro en `pago`.
 
 Los cambios de esquema se hacen **siempre** con un archivo nuevo en
 `database/migrations/` (nunca editando la base a mano) y se aplican con
