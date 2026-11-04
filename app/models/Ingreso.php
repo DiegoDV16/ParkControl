@@ -160,7 +160,7 @@ class Ingreso
                      numeroVuelo, llaves, observacion, estado)
                  VALUES
                     (:idServicioExtra, :idUsuario, :idVehiculo, :idFila, :idCliente,
-                     CURDATE(), CURTIME(), :fechaRegreso, :horaRegreso,
+                     :fechaInicio, :horaInicio, :fechaRegreso, :horaRegreso,
                      :numeroVuelo, :llaves, :observacion, 'abierto')"
             );
             $stmt->execute([
@@ -169,6 +169,8 @@ class Ingreso
                 ':idVehiculo'      => $datos['idVehiculo'],
                 ':idFila'          => $datos['idFila'],
                 ':idCliente'       => $datos['idCliente'],
+                ':fechaInicio'     => $datos['fechaInicio'],
+                ':horaInicio'      => $datos['horaInicio'],
                 ':fechaRegreso'    => $datos['fechaRegreso'] !== '' ? $datos['fechaRegreso'] : null,
                 ':horaRegreso'     => $datos['horaRegreso'] !== '' ? $datos['horaRegreso'] : null,
                 ':numeroVuelo'     => $datos['numeroVuelo'] !== '' ? $datos['numeroVuelo'] : null,

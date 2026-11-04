@@ -173,6 +173,10 @@ Se mantienen algunas columnas adicionales necesarias para la operación:
 cerrarlo se completan `fechaTermino`, `horaTermino` y `montoTotal`, y se
 registra el cobro en `pago`.
 
+Al registrar un ingreso **no se selecciona cliente**: se toma automáticamente
+el propietario del vehículo (`vehiculo.idCliente`). El formulario se abre en un
+modal desde el listado de ingresos, con la fecha y hora de inicio editables.
+
 Los cambios de esquema se hacen **siempre** con un archivo nuevo en
 `database/migrations/` (nunca editando la base a mano) y se aplican con
 `database/migrate.php`. Las migraciones son aditivas y conservan los datos.
