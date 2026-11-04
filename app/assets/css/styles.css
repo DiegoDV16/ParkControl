@@ -605,3 +605,26 @@ body {
         border: 1px solid #dee2e6;
     }
 }
+
+/* --------------------------------------------------------------------------
+   12. SECCIONES JUMBOTRON
+   Bloques que agrupan campos dentro de formularios extensos (modales).
+   -------------------------------------------------------------------------- */
+.pc-jumbotron {
+    background: linear-gradient(135deg, #eef4fb 0%, #f8fbff 100%);
+    border: 1px solid var(--pc-borde);
+    border-radius: 1rem;
+    padding: 1rem 1.15rem;
+}
+
+.pc-jumbotron-titulo {
+    display: flex;
+    align-items: center;
+    gap: .35rem;
+    font-size: .78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    color: var(--pc-azul-700);
+    margin-bottom: .85rem;
+}

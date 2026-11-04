@@ -26,6 +26,25 @@ class Modelo
         return $stmt->fetchAll();
     }
 
+    public static function porNombre(int $idMarca, string $modelo): ?array
+    {
+        $stmt = Database::getConexion()->prepare(
+            'SELECT * FROM modelo WHERE idMarca = :idMarca AND modelo = :modelo LIMIT 1'
+        );
+        $stmt->execute([':idMarca' => $idMarca, ':modelo' => $modelo]);
+        $fila = $stmt->fetch();
+        return $fila ?: null;
+    }
+
+    public static function crear(int $idMarca, string $modelo): int
+    {
+        $stmt = Database::getConexion()->prepare(
+            'INSERT INTO modelo (idMarca, modelo) VALUES (:idMarca, :modelo)'
+        );
+        $stmt->execute([':idMarca' => $idMarca, ':modelo' => $modelo]);
+        return (int) Database::getConexion()->lastInsertId();
+    }
+
     public static function existe(int $idModelo): bool
     {
         $stmt = Database::getConexion()->prepare('SELECT 1 FROM modelo WHERE idModelo = :id LIMIT 1');

@@ -3,14 +3,14 @@
  * ==========================================================================
  * ParkControl · app/models/Ingreso.php
  * ==========================================================================
- * Ingresos del estacionamiento: entrada por fila, salida con cobro por día
- * y anulación. La ocupación se calcula con fechaTermino IS NULL.
+ * Ingresos del estacionamiento. El registro puede crear (o reutilizar) el
+ * cliente y el vehículo a partir de los datos del formulario, y luego inserta
+ * la fila en `ingreso` dentro de una sola transacción.
  * ==========================================================================
  */
 
 class Ingreso
 {
-    /** Consulta base con cliente, vehículo, fila, servicio y tipo de vehículo. */
     private static function base(): string
     {
         return 'SELECT i.*,
@@ -49,7 +49,6 @@ class Ingreso
         return (float) Database::getConexion()->query($sql)->fetchColumn();
     }
 
-    /** Últimos ingresos registrados (panel). */
     public static function ultimos(int $limite = 6): array
     {
         $limite = max(1, min(50, $limite));
@@ -66,7 +65,6 @@ class Ingreso
         return Database::getConexion()->query($sql)->fetchAll();
     }
 
-    /** Listado filtrable para la pantalla de ingresos. */
     public static function listar(string $estado = '', string $busqueda = '', string $desde = '', string $hasta = ''): array
     {
         $sql = self::base();
@@ -126,59 +124,93 @@ class Ingreso
     }
 
     /**
-     * Registra la entrada: valida la capacidad de la fila y crea el ingreso
-     * dentro de una transacción. Lanza RuntimeException si la fila está llena.
+     * Registra un ingreso creando o reutilizando cliente y vehículo.
+     * Todo ocurre en una sola transacción.
      */
-    public static function crear(array $datos): int
+    public static function registrarConDatos(array $datos): int
     {
         $pdo = Database::getConexion();
         $pdo->beginTransaction();
 
         try {
-            $fila = $pdo->prepare('SELECT capacidadTotal FROM fila WHERE idFila = :id FOR UPDATE');
-            $fila->execute([':id' => $datos['idFila']]);
-            $capacidad = (int) $fila->fetchColumn();
+            $rut = Rut::formatear($datos['rut']);
+            $cliente = Cliente::porRut($rut);
 
-            if ($capacidad <= 0) {
-                throw new RuntimeException('La fila seleccionada no existe.');
+            if ($cliente !== null) {
+                $idCliente = (int) $cliente['idCliente'];
+                Cliente::actualizar($idCliente, [
+                    'rut'             => $rut,
+                    'nombres'         => $datos['nombres'],
+                    'apellidoPaterno' => $datos['apellidoPaterno'],
+                    'apellidoMaterno' => $datos['apellidoMaterno'],
+                    'telefono'        => $datos['telefono'],
+                    'correo'          => $datos['correo'],
+                ]);
+            } else {
+                $idCliente = Cliente::crear([
+                    'rut'             => $rut,
+                    'nombres'         => $datos['nombres'],
+                    'apellidoPaterno' => $datos['apellidoPaterno'],
+                    'apellidoMaterno' => $datos['apellidoMaterno'],
+                    'telefono'        => $datos['telefono'],
+                    'correo'          => $datos['correo'],
+                ]);
             }
 
-            $contar = $pdo->prepare(
-                'SELECT COUNT(*) FROM ingreso WHERE idFilaEstacionamiento = :id AND fechaTermino IS NULL'
-            );
-            $contar->execute([':id' => $datos['idFila']]);
-            $ocupadas = (int) $contar->fetchColumn();
+            $marca = Marca::porNombre($datos['marca']);
+            $idMarca = $marca !== null ? (int) $marca['idMarca'] : Marca::crear($datos['marca']);
 
-            if ($ocupadas >= $capacidad) {
-                throw new RuntimeException('La fila seleccionada ya está completa.');
+            $modelo = Modelo::porNombre($idMarca, $datos['modelo']);
+            $idModelo = $modelo !== null ? (int) $modelo['idModelo'] : Modelo::crear($idMarca, $datos['modelo']);
+
+            $vehiculo = Vehiculo::porPatente($datos['patente']);
+
+            if ($vehiculo !== null) {
+                $duenio = (int) ($vehiculo['idCliente'] ?? 0);
+                if ($duenio > 0 && $duenio !== $idCliente) {
+                    throw new RuntimeException('La patente ya está registrada para otro cliente.');
+                }
+                if (self::activoPorVehiculo((int) $vehiculo['idVehiculo']) !== null) {
+                    throw new RuntimeException('El vehículo ya tiene un ingreso abierto.');
+                }
+
+                $idVehiculo = (int) $vehiculo['idVehiculo'];
+                Vehiculo::actualizar($idVehiculo, [
+                    'idCliente'      => $idCliente,
+                    'patente'        => $datos['patente'],
+                    'anio'           => $datos['anio'],
+                    'color'          => $datos['color'],
+                    'idModelo'       => $idModelo,
+                    'idTipoVehiculo' => $datos['idTipoVehiculo'],
+                ]);
+            } else {
+                $idVehiculo = Vehiculo::crear([
+                    'idCliente'      => $idCliente,
+                    'patente'        => $datos['patente'],
+                    'anio'           => $datos['anio'],
+                    'color'          => $datos['color'],
+                    'idModelo'       => $idModelo,
+                    'idTipoVehiculo' => $datos['idTipoVehiculo'],
+                ]);
             }
 
-            $stmt = $pdo->prepare(
-                "INSERT INTO ingreso
-                    (idServicioExtra, idUsuario, idVehiculo, idFilaEstacionamiento, idCliente,
-                     fechaInicio, horaInicio, fechaRegreso, horaRegreso,
-                     numeroVuelo, llaves, observacion, estado)
-                 VALUES
-                    (:idServicioExtra, :idUsuario, :idVehiculo, :idFila, :idCliente,
-                     :fechaInicio, :horaInicio, :fechaRegreso, :horaRegreso,
-                     :numeroVuelo, :llaves, :observacion, 'abierto')"
-            );
-            $stmt->execute([
-                ':idServicioExtra' => $datos['idServicioExtra'] > 0 ? $datos['idServicioExtra'] : null,
-                ':idUsuario'       => $datos['idUsuario'],
-                ':idVehiculo'      => $datos['idVehiculo'],
-                ':idFila'          => $datos['idFila'],
-                ':idCliente'       => $datos['idCliente'],
-                ':fechaInicio'     => $datos['fechaInicio'],
-                ':horaInicio'      => $datos['horaInicio'],
-                ':fechaRegreso'    => $datos['fechaRegreso'] !== '' ? $datos['fechaRegreso'] : null,
-                ':horaRegreso'     => $datos['horaRegreso'] !== '' ? $datos['horaRegreso'] : null,
-                ':numeroVuelo'     => $datos['numeroVuelo'] !== '' ? $datos['numeroVuelo'] : null,
-                ':llaves'          => $datos['llaves'],
-                ':observacion'     => $datos['observacion'] !== '' ? $datos['observacion'] : null,
+            self::verificarCapacidad($datos['idFila']);
+
+            $id = self::insertar([
+                'idServicioExtra' => $datos['idServicioExtra'],
+                'idUsuario'       => $datos['idUsuario'],
+                'idVehiculo'      => $idVehiculo,
+                'idFila'          => $datos['idFila'],
+                'idCliente'       => $idCliente,
+                'fechaInicio'     => $datos['fechaInicio'],
+                'horaInicio'      => $datos['horaInicio'],
+                'fechaRegreso'    => $datos['fechaRegreso'],
+                'horaRegreso'     => $datos['horaRegreso'],
+                'numeroVuelo'     => $datos['numeroVuelo'],
+                'llaves'          => $datos['llaves'],
+                'observacion'     => $datos['observacion'],
             ]);
 
-            $id = (int) $pdo->lastInsertId();
             $pdo->commit();
             return $id;
         } catch (Throwable $error) {
@@ -187,6 +219,60 @@ class Ingreso
             }
             throw $error;
         }
+    }
+
+    /** Comprueba que la fila tenga capacidad y exista. */
+    private static function verificarCapacidad(int $idFila): void
+    {
+        $pdo = Database::getConexion();
+
+        $fila = $pdo->prepare('SELECT capacidadTotal FROM fila WHERE idFila = :id FOR UPDATE');
+        $fila->execute([':id' => $idFila]);
+        $capacidad = (int) $fila->fetchColumn();
+
+        if ($capacidad <= 0) {
+            throw new RuntimeException('La fila seleccionada no existe.');
+        }
+
+        $contar = $pdo->prepare(
+            'SELECT COUNT(*) FROM ingreso WHERE idFilaEstacionamiento = :id AND fechaTermino IS NULL'
+        );
+        $contar->execute([':id' => $idFila]);
+
+        if ((int) $contar->fetchColumn() >= $capacidad) {
+            throw new RuntimeException('La fila seleccionada ya está completa.');
+        }
+    }
+
+    /** Inserta el ingreso (sin abrir transacción). */
+    private static function insertar(array $datos): int
+    {
+        $stmt = Database::getConexion()->prepare(
+            "INSERT INTO ingreso
+                (idServicioExtra, idUsuario, idVehiculo, idFilaEstacionamiento, idCliente,
+                 fechaInicio, horaInicio, fechaRegreso, horaRegreso,
+                 numeroVuelo, llaves, observacion, estado)
+             VALUES
+                (:idServicioExtra, :idUsuario, :idVehiculo, :idFila, :idCliente,
+                 :fechaInicio, :horaInicio, :fechaRegreso, :horaRegreso,
+                 :numeroVuelo, :llaves, :observacion, 'abierto')"
+        );
+        $stmt->execute([
+            ':idServicioExtra' => $datos['idServicioExtra'] > 0 ? $datos['idServicioExtra'] : null,
+            ':idUsuario'       => $datos['idUsuario'],
+            ':idVehiculo'      => $datos['idVehiculo'],
+            ':idFila'          => $datos['idFila'],
+            ':idCliente'       => $datos['idCliente'],
+            ':fechaInicio'     => $datos['fechaInicio'],
+            ':horaInicio'      => $datos['horaInicio'],
+            ':fechaRegreso'    => $datos['fechaRegreso'] !== '' ? $datos['fechaRegreso'] : null,
+            ':horaRegreso'     => $datos['horaRegreso'] !== '' ? $datos['horaRegreso'] : null,
+            ':numeroVuelo'     => $datos['numeroVuelo'] !== '' ? $datos['numeroVuelo'] : null,
+            ':llaves'          => $datos['llaves'],
+            ':observacion'     => $datos['observacion'] !== '' ? $datos['observacion'] : null,
+        ]);
+
+        return (int) Database::getConexion()->lastInsertId();
     }
 
     /** Cierra el ingreso con el monto calculado y registra el pago. */
@@ -207,8 +293,8 @@ class Ingreso
                 throw new RuntimeException('El ingreso ya fue cerrado o anulado.');
             }
 
-            $estado = $pdo->prepare("UPDATE ingreso SET estado = 'cerrado' WHERE idIngreso = :id");
-            $estado->execute([':id' => $id]);
+            $pdo->prepare("UPDATE ingreso SET estado = 'cerrado' WHERE idIngreso = :id")
+                ->execute([':id' => $id]);
 
             $pago = $pdo->prepare(
                 'INSERT INTO pago (idIngreso, idUsuario, metodo, monto, vuelto)
@@ -235,7 +321,7 @@ class Ingreso
     public static function anular(int $id): void
     {
         $stmt = Database::getConexion()->prepare(
-            "UPDATE ingreso SET fechaTermino = CURDATE(), horaTermino = CURTIME(), estado = 'anulado'
+            "UPDATE ingreso SET fechaTermino = CURDATE(), horaTermino = NOW(), estado = 'anulado'
              WHERE idIngreso = :id AND fechaTermino IS NULL AND estado = 'abierto'"
         );
         $stmt->execute([':id' => $id]);
