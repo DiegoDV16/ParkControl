@@ -1,1 +1,8 @@
-app/config/conexion.php
+# Credenciales locales (nunca versionar)
+app/config/config.local.php
+
+# Archivos temporales y de registro
+*.log
+*.tmp
+*.bak
+database/*.log

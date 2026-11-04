@@ -496,3 +496,112 @@ body {
         padding: .6rem 1rem;
     }
 }
+
+/* --------------------------------------------------------------------------
+   9. PANEL E INDICADORES
+   Tarjetas de métricas, barra de ocupación y estados vacíos de tablas.
+   -------------------------------------------------------------------------- */
+.pc-metrica-etiqueta {
+    font-size: .72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    color: #64748b;
+}
+
+.pc-metrica-valor {
+    font-size: 1.65rem;
+    font-weight: 700;
+    line-height: 1.15;
+    color: var(--pc-azul-900);
+}
+
+.pc-progreso {
+    height: .6rem;
+    border-radius: 1rem;
+    background-color: #e9eef6;
+}
+
+.pc-tabla-vacia {
+    padding: 2.5rem 1rem;
+    text-align: center;
+    color: #64748b;
+}
+
+/* Celdas numéricas de tablas y formularios compactos */
+.pc-tabla .pc-monto {
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+}
+
+/* Tarjeta de formulario (altas y ediciones) */
+.pc-form-card {
+    max-width: 720px;
+}
+
+/* --------------------------------------------------------------------------
+   10. MAPA DE PLAZAS
+   Cada plaza es un botón cuadrado cuyo color indica su estado.
+   -------------------------------------------------------------------------- */
+.pc-plaza {
+    width: 58px;
+    height: 52px;
+    border-radius: .6rem;
+    border: 1px solid transparent;
+    font-weight: 700;
+    font-size: .72rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: filter .15s ease, transform .15s ease;
+}
+
+.pc-plaza-libre {
+    background-color: #e7f7ee;
+    color: #1e9e5a;
+    border-color: #bfe8d2;
+}
+
+.pc-plaza-ocupada {
+    background-color: #fdeaea;
+    color: #d64545;
+    border-color: #f5c6c6;
+    cursor: not-allowed;
+}
+
+.pc-plaza-fuera {
+    background-color: #fff5e6;
+    color: #b87400;
+    border-color: #f7ddb0;
+}
+
+.pc-plaza:hover:not(:disabled) {
+    filter: brightness(.96);
+    transform: translateY(-1px);
+}
+
+/* --------------------------------------------------------------------------
+   11. IMPRESIÓN (reportes)
+   -------------------------------------------------------------------------- */
+@media print {
+    .pc-sidebar,
+    .pc-topbar,
+    .pc-sidebar-offcanvas,
+    .btn,
+    .alert {
+        display: none !important;
+    }
+
+    .pc-app {
+        grid-template-columns: 1fr;
+    }
+
+    .pc-contenido {
+        padding: 0;
+    }
+
+    .pc-card {
+        box-shadow: none;
+        border: 1px solid #dee2e6;
+    }
+}
