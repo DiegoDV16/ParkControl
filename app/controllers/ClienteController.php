@@ -3,7 +3,7 @@
  * ==========================================================================
  * ParkControl · app/controllers/ClienteController.php
  * ==========================================================================
- * Gestión de clientes (dueños de vehículos).
+ * Gestión de clientes mediante modales sobre el listado.
  * ==========================================================================
  */
 
@@ -14,31 +14,14 @@ class ClienteController
         $busqueda = trim((string) ($_GET['q'] ?? ''));
         $clientes = Cliente::listar($busqueda);
 
+        $errores = $_SESSION['_errores'] ?? [];
+        $old = $_SESSION['_old'] ?? [];
+        $abrirModal = $_SESSION['_modal_cliente'] ?? false;
+        unset($_SESSION['_errores'], $_SESSION['_old'], $_SESSION['_modal_cliente']);
+
         $titulo = 'Clientes';
         $seccion = 'clientes';
         require PC_APP . '/views/clientes/index.php';
-    }
-
-    public function crear(): void
-    {
-        $cliente = [
-            'idCliente'       => 0,
-            'rut'             => '',
-            'nombres'         => '',
-            'apellidoPaterno' => '',
-            'apellidoMaterno' => '',
-            'telefono'        => '',
-            'correo'          => '',
-            'estado'          => 1,
-        ];
-        $modo = 'crear';
-        $errores = $_SESSION['_errores'] ?? [];
-        $old = $_SESSION['_old'] ?? [];
-        unset($_SESSION['_errores'], $_SESSION['_old']);
-
-        $titulo = 'Nuevo cliente';
-        $seccion = 'clientes';
-        require PC_APP . '/views/clientes/form.php';
     }
 
     public function guardar(): void
@@ -47,7 +30,7 @@ class ClienteController
         $validacion = $this->validar($datos, 0);
 
         if (!$validacion->valido()) {
-            $this->volverConErrores($validacion->errores(), $datos, 'clientes/crear');
+            $this->volverConErrores($validacion->errores(), $datos);
         }
 
         $id = Cliente::crear([
@@ -64,25 +47,6 @@ class ClienteController
         redirigir('clientes');
     }
 
-    public function editar(): void
-    {
-        $id = (int) ($_GET['id'] ?? 0);
-        $cliente = Cliente::porId($id);
-        if ($cliente === null) {
-            Flash::error('El cliente solicitado no existe.');
-            redirigir('clientes');
-        }
-
-        $modo = 'editar';
-        $errores = $_SESSION['_errores'] ?? [];
-        $old = $_SESSION['_old'] ?? [];
-        unset($_SESSION['_errores'], $_SESSION['_old']);
-
-        $titulo = 'Editar cliente';
-        $seccion = 'clientes';
-        require PC_APP . '/views/clientes/form.php';
-    }
-
     public function actualizar(): void
     {
         $id = (int) ($_POST['idCliente'] ?? 0);
@@ -95,7 +59,7 @@ class ClienteController
         $validacion = $this->validar($datos, $id);
 
         if (!$validacion->valido()) {
-            $this->volverConErrores($validacion->errores(), $datos, 'clientes/editar', ['id' => $id]);
+            $this->volverConErrores($validacion->errores(), $datos + ['idCliente' => (string) $id]);
         }
 
         Cliente::actualizar($id, [
@@ -170,11 +134,12 @@ class ClienteController
         return $v;
     }
 
-    private function volverConErrores(array $errores, array $datos, string $ruta, array $parametros = []): never
+    private function volverConErrores(array $errores, array $datos): never
     {
         $_SESSION['_errores'] = $errores;
         $_SESSION['_old'] = $datos;
-        Flash::error('Revisa los campos marcados en el formulario.');
-        redirigir($ruta, $parametros);
+        $_SESSION['_modal_cliente'] = '#modalCliente';
+        Flash::error('Revisa los datos del cliente: ' . reset($errores));
+        redirigir('clientes');
     }
 }

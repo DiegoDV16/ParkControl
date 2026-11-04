@@ -52,6 +52,22 @@ desarrolle o mantenga este proyecto.
   aplicar y revertir el cambio. Si Laravel está instalado, crea migraciones;
   en caso contrario, proporciona SQL explícito y seguro para el entorno local.
 
+## Interfaz, Bootstrap y JavaScript
+
+- Bootstrap 5 se sirve **desde el propio proyecto** en `app/assets/vendor/`
+  (CSS, JS e iconos). No agregues enlaces a CDN en las vistas nuevas.
+- Los CRUD de usuarios y clientes se resuelven con **modales de Bootstrap 5**
+  sobre el listado, no con páginas de formulario independientes. Usa el modal
+  reutilizable (`data-form-modal`) y el de confirmación (`data-confirmar`).
+- La lógica de interfaz vive en `app/assets/js/main.js`. Evita `onclick` y
+  scripts inline; declara el comportamiento con atributos `data-*`.
+- Toda acción destructiva o irreversible debe confirmarse en un modal, nunca
+  con `confirm()` del navegador.
+- Mantén accesibilidad básica: `aria-label`, `aria-hidden`, foco en el primer
+  campo al abrir un modal y cierre con la tecla Escape.
+- Reutiliza los componentes y utilidades de Bootstrap (`modal`, `alert`,
+  `dropdown`, `progress`, `table`) antes de crear CSS nuevo.
+
 ## Verificación
 
 - Usa Apache y MySQL de XAMPP para probar flujos que dependan del servidor o de

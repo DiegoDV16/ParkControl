@@ -22,18 +22,18 @@ return static function (Router $router): void {
 
     // Usuarios (solo administración)
     $router->get('usuarios', [UsuarioController::class, 'index'], ['rol' => 1]);
-    $router->get('usuarios/crear', [UsuarioController::class, 'crear'], ['rol' => 1]);
+
     $router->post('usuarios/crear', [UsuarioController::class, 'guardar'], ['rol' => 1]);
-    $router->get('usuarios/editar', [UsuarioController::class, 'editar'], ['rol' => 1]);
+
     $router->post('usuarios/actualizar', [UsuarioController::class, 'actualizar'], ['rol' => 1]);
     $router->post('usuarios/estado', [UsuarioController::class, 'estado'], ['rol' => 1]);
     $router->post('usuarios/restablecer', [UsuarioController::class, 'restablecer'], ['rol' => 1]);
 
     // Clientes
     $router->get('clientes', [ClienteController::class, 'index']);
-    $router->get('clientes/crear', [ClienteController::class, 'crear']);
+
     $router->post('clientes/crear', [ClienteController::class, 'guardar']);
-    $router->get('clientes/editar', [ClienteController::class, 'editar']);
+
     $router->post('clientes/actualizar', [ClienteController::class, 'actualizar']);
     $router->post('clientes/estado', [ClienteController::class, 'estado']);
 

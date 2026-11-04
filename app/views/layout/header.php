@@ -58,12 +58,12 @@ $pintarMenu = static function () use ($menu, $rol, $seccion): void {
     <meta name="description" content="ParkControl - Sistema de control de estacionamiento">
     <title><?php echo e($titulo); ?> · <?php echo e(config('app.nombre', 'ParkControl')); ?></title>
 
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link href="<?php echo e(asset('vendor/bootstrap/bootstrap.min.css')); ?>" rel="stylesheet">
+    <link href="<?php echo e(asset('vendor/bootstrap-icons/bootstrap-icons.min.css')); ?>" rel="stylesheet">
     <link href="<?php echo e(asset('css/styles.css')); ?>" rel="stylesheet">
 </head>
 
-<body>
+<body<?php echo !empty($abrirModal) ? ' data-abrir-modal="' . e($abrirModal) . '"' : ''; ?>>
     <div class="pc-app">
 
         <aside class="pc-sidebar" aria-label="Navegación principal">

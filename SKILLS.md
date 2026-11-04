@@ -54,6 +54,18 @@ aplicar al trabajar en el proyecto.
 - Al gestionar archivos, comprobar tipo, tamaño y nombre, y evitar que las
   cargas puedan ejecutarse como código.
 
+## Bootstrap 5 y JavaScript
+
+- Usar Bootstrap 5 (servido localmente en `app/assets/vendor/`) para modales,
+  alertas, dropdowns, tablas y barras de progreso.
+- Implementar los formularios de alta y edición de usuarios y clientes como
+  modales sobre el listado, reutilizando el mismo markup y el JS compartido.
+- Escribir JavaScript progresivo en `app/assets/js/main.js`, sin manejadores
+  inline, usando atributos `data-*` y APIs de Bootstrap
+  (`bootstrap.Modal`, `bootstrap.Alert`).
+- Confirmar acciones destructivas con un modal de confirmación reutilizable.
+- Validar siempre en el servidor; el JavaScript es una ayuda de interfaz.
+
 ## Flujo de trabajo para cada cambio
 
 1. Identificar los archivos y el flujo MVC implicados; revisar el README y los
