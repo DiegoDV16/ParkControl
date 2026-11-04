@@ -17,8 +17,8 @@ $mensaje = $mensaje ?? 'Ocurrió un problema.';
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title><?php echo e($titulo); ?> · ParkControl</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link href="<?php echo e(asset('vendor/bootstrap/bootstrap.min.css')); ?>" rel="stylesheet">
+    <link href="<?php echo e(asset('vendor/bootstrap-icons/bootstrap-icons.min.css')); ?>" rel="stylesheet">
     <link href="<?php echo e(asset('css/styles.css')); ?>" rel="stylesheet">
 </head>
 <body class="pc-login d-flex align-items-center min-vh-100">

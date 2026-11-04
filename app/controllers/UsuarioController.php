@@ -3,7 +3,7 @@
  * ==========================================================================
  * ParkControl · app/controllers/UsuarioController.php
  * ==========================================================================
- * Gestión de usuarios del sistema (solo rol Administrador).
+ * Gestión de usuarios mediante modales sobre el listado.
  * ==========================================================================
  */
 
@@ -13,33 +13,16 @@ class UsuarioController
     {
         $busqueda = trim((string) ($_GET['q'] ?? ''));
         $usuarios = Usuario::listar($busqueda);
+        $roles = Rol::todas();
+
+        $errores = $_SESSION['_errores'] ?? [];
+        $old = $_SESSION['_old'] ?? [];
+        $abrirModal = $_SESSION['_modal_usuario'] ?? false;
+        unset($_SESSION['_errores'], $_SESSION['_old'], $_SESSION['_modal_usuario']);
 
         $titulo = 'Usuarios';
         $seccion = 'usuarios';
         require PC_APP . '/views/usuarios/index.php';
-    }
-
-    public function crear(): void
-    {
-        $usuario = [
-            'idUsuario'       => 0,
-            'idRol'           => 2,
-            'rut'             => '',
-            'nombres'         => '',
-            'apellidoPaterno' => '',
-            'apellidoMaterno' => '',
-            'correo'          => '',
-            'estado'          => 1,
-        ];
-        $roles = Rol::todas();
-        $modo = 'crear';
-        $errores = $_SESSION['_errores'] ?? [];
-        $old = $_SESSION['_old'] ?? [];
-        unset($_SESSION['_errores'], $_SESSION['_old']);
-
-        $titulo = 'Nuevo usuario';
-        $seccion = 'usuarios';
-        require PC_APP . '/views/usuarios/form.php';
     }
 
     public function guardar(): void
@@ -48,7 +31,7 @@ class UsuarioController
         $validacion = $this->validar($datos, 0);
 
         if (!$validacion->valido()) {
-            $this->volverConErrores($validacion->errores(), $datos, 'usuarios/crear');
+            $this->volverConErrores($validacion->errores(), $datos);
         }
 
         $id = Usuario::crear([
@@ -66,26 +49,6 @@ class UsuarioController
         redirigir('usuarios');
     }
 
-    public function editar(): void
-    {
-        $id = (int) ($_GET['id'] ?? 0);
-        $usuario = Usuario::porId($id);
-        if ($usuario === null) {
-            Flash::error('El usuario solicitado no existe.');
-            redirigir('usuarios');
-        }
-
-        $roles = Rol::todas();
-        $modo = 'editar';
-        $errores = $_SESSION['_errores'] ?? [];
-        $old = $_SESSION['_old'] ?? [];
-        unset($_SESSION['_errores'], $_SESSION['_old']);
-
-        $titulo = 'Editar usuario';
-        $seccion = 'usuarios';
-        require PC_APP . '/views/usuarios/form.php';
-    }
-
     public function actualizar(): void
     {
         $id = (int) ($_POST['idUsuario'] ?? 0);
@@ -99,12 +62,11 @@ class UsuarioController
         $validacion = $this->validar($datos, $id);
 
         if (!$validacion->valido()) {
-            $this->volverConErrores($validacion->errores(), $datos, 'usuarios/editar', ['id' => $id]);
+            $this->volverConErrores($validacion->errores(), $datos + ['idUsuario' => (string) $id]);
         }
 
-        // No permitir quitarse a sí mismo el rol de administrador.
-        $yo = Auth::usuario();
-        if ($id === (int) $yo['id'] && $datos['idRol'] !== 1 && Usuario::contarAdministradoresActivos($id) === 0) {
+        if ($id === (int) Auth::usuario()['id'] && $datos['idRol'] !== 1
+            && Usuario::contarAdministradoresActivos($id) === 0) {
             Flash::error('No puedes quitarte el rol de administrador: eres el único activo.');
             redirigir('usuarios');
         }
@@ -133,8 +95,7 @@ class UsuarioController
             redirigir('usuarios');
         }
 
-        $yo = Auth::usuario();
-        if ($id === (int) $yo['id']) {
+        if ($id === (int) Auth::usuario()['id']) {
             Flash::error('No puedes desactivar tu propia cuenta.');
             redirigir('usuarios');
         }
@@ -229,11 +190,12 @@ class UsuarioController
         return $v;
     }
 
-    private function volverConErrores(array $errores, array $datos, string $ruta, array $parametros = []): never
+    private function volverConErrores(array $errores, array $datos): never
     {
         $_SESSION['_errores'] = $errores;
         $_SESSION['_old'] = $datos;
-        Flash::error('Revisa los campos marcados en el formulario.');
-        redirigir($ruta, $parametros);
+        $_SESSION['_modal_usuario'] = '#modalUsuario';
+        Flash::error('Revisa los datos del usuario: ' . reset($errores));
+        redirigir('usuarios');
     }
 }
