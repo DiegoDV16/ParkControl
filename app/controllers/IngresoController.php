@@ -3,7 +3,8 @@
  * ==========================================================================
  * ParkControl · app/controllers/IngresoController.php
  * ==========================================================================
- * Entradas por fila, salida con cobro por día y anulación.
+ * Entradas mediante modal (sin seleccionar cliente: se toma del vehículo),
+ * salida con cobro por día y anulación.
  * ==========================================================================
  */
 
@@ -23,34 +24,29 @@ class IngresoController
             'cobrado'  => Ingreso::recaudacionHoy(),
         ];
 
-        $titulo = 'Ingresos';
-        $seccion = 'ingresos';
-        require PC_APP . '/views/ingresos/index.php';
-    }
-
-    public function crear(): void
-    {
-        $clientes = Cliente::activos();
+        // Catálogos para el modal de registro
         $vehiculos = Vehiculo::listar();
         $filas = Fila::disponibles();
         $servicios = ServicioExtra::activos();
 
         $errores = $_SESSION['_errores'] ?? [];
         $old = $_SESSION['_old'] ?? [];
-        unset($_SESSION['_errores'], $_SESSION['_old']);
+        $abrirModal = $_SESSION['_modal_ingreso'] ?? false;
+        unset($_SESSION['_errores'], $_SESSION['_old'], $_SESSION['_modal_ingreso']);
 
-        $titulo = 'Nuevo ingreso';
+        $titulo = 'Ingresos';
         $seccion = 'ingresos';
-        require PC_APP . '/views/ingresos/form.php';
+        require PC_APP . '/views/ingresos/index.php';
     }
 
     public function guardar(): void
     {
         $datos = [
-            'idCliente'       => (int) ($_POST['idCliente'] ?? 0),
             'idVehiculo'      => (int) ($_POST['idVehiculo'] ?? 0),
             'idFila'          => (int) ($_POST['idFila'] ?? 0),
             'idServicioExtra' => (int) ($_POST['idServicioExtra'] ?? 0),
+            'fechaInicio'     => trim((string) ($_POST['fechaInicio'] ?? '')),
+            'horaInicio'      => trim((string) ($_POST['horaInicio'] ?? '')),
             'fechaRegreso'    => trim((string) ($_POST['fechaRegreso'] ?? '')),
             'horaRegreso'     => trim((string) ($_POST['horaRegreso'] ?? '')),
             'numeroVuelo'     => trim((string) ($_POST['numeroVuelo'] ?? '')),
@@ -59,15 +55,23 @@ class IngresoController
         ];
 
         $v = (new Validador(array_map('strval', $datos)))
-            ->entero('idCliente', 'cliente', 1, PHP_INT_MAX)
             ->entero('idVehiculo', 'vehículo', 1, PHP_INT_MAX)
             ->entero('idFila', 'fila', 1, PHP_INT_MAX)
+            ->requerido('fechaInicio', 'fecha de inicio')
+            ->requerido('horaInicio', 'hora de inicio')
+            ->fecha('fechaInicio', 'fecha de inicio')
             ->fecha('fechaRegreso', 'fecha de regreso')
             ->longitud('numeroVuelo', 'número de vuelo', 0, 12)
             ->longitud('observacion', 'observación', 0, 500);
 
-        if ($datos['fechaRegreso'] !== '' && $datos['fechaRegreso'] < date('Y-m-d')) {
-            $v->agregar('fechaRegreso', 'La fecha de regreso no puede ser anterior a hoy.');
+        if (!preg_match('/^\d{2}:\d{2}$/', $datos['horaInicio'])) {
+            $v->agregar('horaInicio', 'La hora de inicio no es válida.');
+        }
+        if ($datos['horaRegreso'] !== '' && !preg_match('/^\d{2}:\d{2}$/', $datos['horaRegreso'])) {
+            $v->agregar('horaRegreso', 'La hora de regreso no es válida.');
+        }
+        if ($datos['fechaRegreso'] !== '' && $datos['fechaRegreso'] < $datos['fechaInicio']) {
+            $v->agregar('fechaRegreso', 'La fecha de regreso no puede ser anterior al inicio.');
         }
 
         $vehiculo = $datos['idVehiculo'] > 0 ? Vehiculo::porId($datos['idVehiculo']) : null;
@@ -75,20 +79,20 @@ class IngresoController
 
         if ($vehiculo === null) {
             $v->agregar('idVehiculo', 'Selecciona un vehículo válido.');
+        } else {
+            if ((int) ($vehiculo['idCliente'] ?? 0) <= 0) {
+                $v->agregar('idVehiculo', 'El vehículo no tiene propietario asignado. Asígnalo en Vehículos.');
+            }
+            if (Ingreso::activoPorVehiculo($datos['idVehiculo']) !== null) {
+                $v->agregar('idVehiculo', 'El vehículo ya tiene un ingreso abierto.');
+            }
         }
+
         if ($fila === null || (int) $fila['estado'] !== 1
             || Fila::ocupadas($datos['idFila']) >= (int) $fila['capacidadTotal']) {
             $v->agregar('idFila', 'La fila seleccionada no tiene espacio disponible.');
         }
-        if ($datos['idCliente'] > 0 && Cliente::porId($datos['idCliente']) === null) {
-            $v->agregar('idCliente', 'El cliente seleccionado no es válido.');
-        }
-        if ($vehiculo !== null && (int) $vehiculo['idCliente'] !== $datos['idCliente']) {
-            $v->agregar('idCliente', 'El vehículo no pertenece al cliente seleccionado.');
-        }
-        if ($datos['idVehiculo'] > 0 && Ingreso::activoPorVehiculo($datos['idVehiculo']) !== null) {
-            $v->agregar('idVehiculo', 'El vehículo ya tiene un ingreso abierto.');
-        }
+
         if ($datos['idServicioExtra'] > 0 && ServicioExtra::porId($datos['idServicioExtra']) === null) {
             $v->agregar('idServicioExtra', 'El servicio seleccionado no es válido.');
         }
@@ -96,8 +100,9 @@ class IngresoController
         if (!$v->valido()) {
             $_SESSION['_errores'] = $v->errores();
             $_SESSION['_old'] = $datos;
-            Flash::error('Revisa los datos del ingreso.');
-            redirigir('ingresos/crear');
+            $_SESSION['_modal_ingreso'] = '#modalIngreso';
+            Flash::error('Revisa los datos del ingreso: ' . reset($v->errores()));
+            redirigir('ingresos');
         }
 
         try {
@@ -106,7 +111,9 @@ class IngresoController
                 'idUsuario'       => (int) Auth::usuario()['id'],
                 'idVehiculo'      => $datos['idVehiculo'],
                 'idFila'          => $datos['idFila'],
-                'idCliente'       => $datos['idCliente'],
+                'idCliente'       => (int) $vehiculo['idCliente'],
+                'fechaInicio'     => $datos['fechaInicio'],
+                'horaInicio'      => $datos['horaInicio'],
                 'fechaRegreso'    => $datos['fechaRegreso'],
                 'horaRegreso'     => $datos['horaRegreso'],
                 'numeroVuelo'     => $datos['numeroVuelo'],
@@ -115,7 +122,7 @@ class IngresoController
             ]);
         } catch (RuntimeException $error) {
             Flash::error($error->getMessage());
-            redirigir('ingresos/crear');
+            redirigir('ingresos');
         }
 
         Auditoria::registrar('crear', 'ingreso', $id, 'Ingreso de ' . $vehiculo['patente'] . ' en fila ' . $fila['fila']);

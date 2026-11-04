@@ -53,7 +53,7 @@ return static function (Router $router): void {
 
     // Ingresos y cobros
     $router->get('ingresos', [IngresoController::class, 'index']);
-    $router->get('ingresos/crear', [IngresoController::class, 'crear']);
+
     $router->post('ingresos/crear', [IngresoController::class, 'guardar']);
     $router->get('ingresos/salida', [IngresoController::class, 'salida']);
     $router->post('ingresos/cerrar', [IngresoController::class, 'cerrar']);
