@@ -173,9 +173,14 @@ Se mantienen algunas columnas adicionales necesarias para la operación:
 cerrarlo se completan `fechaTermino`, `horaTermino` y `montoTotal`, y se
 registra el cobro en `pago`.
 
-Al registrar un ingreso **no se selecciona cliente**: se toma automáticamente
-el propietario del vehículo (`vehiculo.idCliente`). El formulario se abre en un
-modal desde el listado de ingresos, con la fecha y hora de inicio editables.
+Al registrar un ingreso **no se seleccionan cliente ni vehículo**: el operador
+escribe los datos del cliente (RUT, nombres, apellidos, teléfono y correo) y
+del vehículo (patente, marca, modelo, tipo, año y color). El sistema busca por
+RUT y patente: si existen los reutiliza, y si no, los crea. Marca y modelo se
+resuelven contra sus catálogos y se crean cuando no existen. Todo ocurre en una
+sola transacción junto con la fila de `ingreso`. El formulario se abre en un
+modal con secciones tipo *jumbotron* desde el listado de ingresos, con fecha y
+hora de inicio editables.
 
 Los cambios de esquema se hacen **siempre** con un archivo nuevo en
 `database/migrations/` (nunca editando la base a mano) y se aplican con

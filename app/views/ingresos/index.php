@@ -3,8 +3,9 @@
  * ==========================================================================
  * ParkControl · app/views/ingresos/index.php
  * ==========================================================================
- * Listado de ingresos y registro mediante modal. El cliente no se elige:
- * se obtiene del propietario del vehículo seleccionado.
+ * Listado de ingresos y registro en modal. El operador escribe los datos del
+ * cliente y del vehículo; el sistema los crea o reutiliza y luego inserta el
+ * ingreso.
  * ==========================================================================
  */
 
@@ -14,14 +15,6 @@ require PC_APP . '/views/layout/header.php';
 
 $valor = static fn (string $campo, mixed $defecto = '') => $old[$campo] ?? $defecto;
 $csrf = Csrf::campo();
-
-$vehiculosJson = [];
-foreach ($vehiculos as $v) {
-    $vehiculosJson[] = [
-        'idVehiculo'  => (int) $v['idVehiculo'],
-        'propietario' => !empty($v['nombres']) ? nombreCompleto($v) : '',
-    ];
-}
 ?>
 
 <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 mb-4">
@@ -177,7 +170,7 @@ foreach ($vehiculos as $v) {
 
 <!-- Modal: registrar ingreso -->
 <div class="modal fade" id="modalIngreso" tabindex="-1" aria-labelledby="modalIngresoTitulo" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content">
             <form method="POST" action="<?php echo e(url('ingresos/crear')); ?>" novalidate>
                 <?php echo $csrf; ?>
@@ -192,95 +185,173 @@ foreach ($vehiculos as $v) {
                         <div class="alert alert-danger small"><?php echo e(reset($errores)); ?></div>
                     <?php endif; ?>
 
-                    <div class="row g-3">
-                        <div class="col-12 col-md-6">
-                            <label for="miVehiculo" class="form-label">Vehículo <span class="text-danger">*</span></label>
-                            <select class="form-select" id="miVehiculo" name="idVehiculo" required>
-                                <option value="">Selecciona un vehículo</option>
-                                <?php foreach ($vehiculos as $v): ?>
-                                    <option value="<?php echo (int) $v['idVehiculo']; ?>"
-                                        <?php echo (int) $valor('idVehiculo', 0) === (int) $v['idVehiculo'] ? 'selected' : ''; ?>>
-                                        <?php echo e($v['patente'] . ' · ' . $v['marca'] . ' ' . $v['modelo']); ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            </select>
-                            <div class="form-text" id="miCliente">El cliente se toma del propietario del vehículo.</div>
-                        </div>
-
-                        <div class="col-12 col-md-6">
-                            <label for="miFila" class="form-label">Fila <span class="text-danger">*</span></label>
-                            <select class="form-select" id="miFila" name="idFila" required>
-                                <option value="">Selecciona una fila</option>
-                                <?php foreach ($filas as $f): ?>
-                                    <option value="<?php echo (int) $f['idFila']; ?>"
-                                        <?php echo (int) $valor('idFila', 0) === (int) $f['idFila'] ? 'selected' : ''; ?>>
-                                        Fila <?php echo e($f['fila']); ?> · <?php echo (int) $f['libres']; ?> espacios libres
-                                    </option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-
-                        <div class="col-12 col-md-6">
-                            <label for="miServicio" class="form-label">Servicio extra</label>
-                            <select class="form-select" id="miServicio" name="idServicioExtra">
-                                <?php foreach ($servicios as $s): ?>
-                                    <option value="<?php echo (int) $s['idServicioExtra']; ?>"
-                                        <?php echo (int) $valor('idServicioExtra', 0) === (int) $s['idServicioExtra'] ? 'selected' : ''; ?>>
-                                        <?php echo e($s['servicioExtra']); ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-
-                        <div class="col-6 col-md-3">
-                            <label for="miFechaInicio" class="form-label">Fecha inicio <span class="text-danger">*</span></label>
-                            <input type="date" class="form-control" id="miFechaInicio" name="fechaInicio" required
-                                   value="<?php echo e($valor('fechaInicio', date('Y-m-d'))); ?>">
-                        </div>
-
-                        <div class="col-6 col-md-3">
-                            <label for="miHoraInicio" class="form-label">Hora inicio <span class="text-danger">*</span></label>
-                            <input type="time" class="form-control" id="miHoraInicio" name="horaInicio" required
-                                   value="<?php echo e($valor('horaInicio', date('H:i'))); ?>">
-                        </div>
-
-                        <div class="col-6 col-md-3">
-                            <label for="miFechaRegreso" class="form-label">Fecha regreso</label>
-                            <input type="date" class="form-control" id="miFechaRegreso" name="fechaRegreso"
-                                   value="<?php echo e($valor('fechaRegreso')); ?>">
-                        </div>
-
-                        <div class="col-6 col-md-3">
-                            <label for="miHoraRegreso" class="form-label">Hora regreso</label>
-                            <input type="time" class="form-control" id="miHoraRegreso" name="horaRegreso"
-                                   value="<?php echo e($valor('horaRegreso')); ?>">
-                        </div>
-
-                        <div class="col-12 col-md-6">
-                            <label for="miVuelo" class="form-label">Número de vuelo</label>
-                            <input type="text" class="form-control" id="miVuelo" name="numeroVuelo"
-                                   maxlength="12" placeholder="Opcional" value="<?php echo e($valor('numeroVuelo')); ?>">
-                        </div>
-
-                        <div class="col-12 col-md-6 d-flex align-items-end">
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="miLlaves" name="llaves" value="1"
-                                    <?php echo (int) $valor('llaves', 0) === 1 ? 'checked' : ''; ?>>
-                                <label class="form-check-label" for="miLlaves">Se retienen las llaves del vehículo</label>
+                    <!-- 1. Datos del cliente -->
+                    <section class="pc-jumbotron mb-3">
+                        <h6 class="pc-jumbotron-titulo"><i class="bi bi-person-vcard me-1"></i> Datos del cliente</h6>
+                        <div class="row g-3">
+                            <div class="col-6 col-md-3">
+                                <label for="miRut" class="form-label">RUT <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="miRut" name="rut"
+                                       placeholder="12.345.678-9" maxlength="13" required value="<?php echo e($valor('rut')); ?>">
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <label for="miNombres" class="form-label">Nombres <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="miNombres" name="nombres"
+                                       maxlength="65" required value="<?php echo e($valor('nombres')); ?>">
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <label for="miApellidoPaterno" class="form-label">Apellido paterno <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="miApellidoPaterno" name="apellidoPaterno"
+                                       maxlength="30" required value="<?php echo e($valor('apellidoPaterno')); ?>">
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <label for="miApellidoMaterno" class="form-label">Apellido materno</label>
+                                <input type="text" class="form-control" id="miApellidoMaterno" name="apellidoMaterno"
+                                       maxlength="30" value="<?php echo e($valor('apellidoMaterno')); ?>">
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <label for="miTelefono" class="form-label">Teléfono</label>
+                                <input type="text" class="form-control" id="miTelefono" name="telefono"
+                                       maxlength="13" placeholder="+56912345678" value="<?php echo e($valor('telefono')); ?>">
+                            </div>
+                            <div class="col-6 col-md-5">
+                                <label for="miCorreo" class="form-label">Correo</label>
+                                <input type="email" class="form-control" id="miCorreo" name="correo"
+                                       maxlength="65" placeholder="cliente@correo.cl" value="<?php echo e($valor('correo')); ?>">
+                            </div>
+                            <div class="col-12 col-md-4 d-flex align-items-end">
+                                <div class="form-text mb-0">
+                                    Si el RUT ya existe, se reutiliza el cliente y se actualizan sus datos.
+                                </div>
                             </div>
                         </div>
+                    </section>
 
-                        <div class="col-12">
-                            <label for="miObservacion" class="form-label">Observaciones</label>
-                            <textarea class="form-control" id="miObservacion" name="observacion" rows="2"
-                                      maxlength="500"><?php echo e($valor('observacion')); ?></textarea>
+                    <!-- 2. Datos del vehículo -->
+                    <section class="pc-jumbotron mb-3">
+                        <h6 class="pc-jumbotron-titulo"><i class="bi bi-car-front me-1"></i> Datos del vehículo</h6>
+                        <div class="row g-3">
+                            <div class="col-6 col-md-2">
+                                <label for="miPatente" class="form-label">Patente <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control text-uppercase" id="miPatente" name="patente"
+                                       placeholder="BBBB12" maxlength="7" required value="<?php echo e($valor('patente')); ?>">
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <label for="miMarca" class="form-label">Marca <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="miMarca" name="marca" list="listaMarcas"
+                                       maxlength="12" required value="<?php echo e($valor('marca')); ?>">
+                                <datalist id="listaMarcas">
+                                    <?php foreach (Marca::todas() as $m): ?>
+                                        <option value="<?php echo e($m['marca']); ?>"></option>
+                                    <?php endforeach; ?>
+                                </datalist>
+                            </div>
+                            <div class="col-6 col-md-2">
+                                <label for="miModelo" class="form-label">Modelo <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="miModelo" name="modelo" list="listaModelos"
+                                       maxlength="12" required value="<?php echo e($valor('modelo')); ?>">
+                                <datalist id="listaModelos">
+                                    <?php foreach (Modelo::todos() as $m): ?>
+                                        <option value="<?php echo e($m['modelo']); ?>"></option>
+                                    <?php endforeach; ?>
+                                </datalist>
+                            </div>
+                            <div class="col-6 col-md-2">
+                                <label for="miTipo" class="form-label">Tipo <span class="text-danger">*</span></label>
+                                <select class="form-select" id="miTipo" name="idTipoVehiculo" required>
+                                    <?php foreach ($tipos as $t): ?>
+                                        <option value="<?php echo (int) $t['idTipoVehiculo']; ?>"
+                                            <?php echo (int) $valor('idTipoVehiculo', 1) === (int) $t['idTipoVehiculo'] ? 'selected' : ''; ?>>
+                                            <?php echo e($t['tipoVehiculo']); ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <div class="col-6 col-md-1">
+                                <label for="miAnio" class="form-label">Año</label>
+                                <input type="number" class="form-control" id="miAnio" name="anio"
+                                       min="1950" max="<?php echo (int) date('Y') + 1; ?>" value="<?php echo e($valor('anio')); ?>">
+                            </div>
+                            <div class="col-6 col-md-2">
+                                <label for="miColor" class="form-label">Color</label>
+                                <input type="text" class="form-control" id="miColor" name="color"
+                                       maxlength="12" value="<?php echo e($valor('color')); ?>">
+                            </div>
                         </div>
-                    </div>
+                    </section>
+
+                    <!-- 3. Datos del ingreso -->
+                    <section class="pc-jumbotron">
+                        <h6 class="pc-jumbotron-titulo"><i class="bi bi-receipt me-1"></i> Datos del ingreso</h6>
+                        <div class="row g-3">
+                            <div class="col-6 col-md-3">
+                                <label for="miFila" class="form-label">Fila <span class="text-danger">*</span></label>
+                                <select class="form-select" id="miFila" name="idFila" required>
+                                    <option value="">Selecciona una fila</option>
+                                    <?php foreach ($filas as $f): ?>
+                                        <option value="<?php echo (int) $f['idFila']; ?>"
+                                            <?php echo (int) $valor('idFila', 0) === (int) $f['idFila'] ? 'selected' : ''; ?>>
+                                            Fila <?php echo e($f['fila']); ?> · <?php echo (int) $f['libres']; ?> libres
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <label for="miServicio" class="form-label">Servicio extra</label>
+                                <select class="form-select" id="miServicio" name="idServicioExtra">
+                                    <option value="0">Sin servicio</option>
+                                    <?php foreach ($servicios as $s): ?>
+                                        <option value="<?php echo (int) $s['idServicioExtra']; ?>"
+                                            <?php echo (int) $valor('idServicioExtra', 0) === (int) $s['idServicioExtra'] ? 'selected' : ''; ?>>
+                                            <?php echo e($s['servicioExtra']); ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <label for="miFechaInicio" class="form-label">Fecha inicio <span class="text-danger">*</span></label>
+                                <input type="date" class="form-control" id="miFechaInicio" name="fechaInicio" required
+                                       value="<?php echo e($valor('fechaInicio', date('Y-m-d'))); ?>">
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <label for="miHoraInicio" class="form-label">Hora inicio <span class="text-danger">*</span></label>
+                                <input type="time" class="form-control" id="miHoraInicio" name="horaInicio" required
+                                       value="<?php echo e($valor('horaInicio', date('H:i'))); ?>">
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <label for="miFechaRegreso" class="form-label">Fecha regreso</label>
+                                <input type="date" class="form-control" id="miFechaRegreso" name="fechaRegreso"
+                                       value="<?php echo e($valor('fechaRegreso')); ?>">
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <label for="miHoraRegreso" class="form-label">Hora regreso</label>
+                                <input type="time" class="form-control" id="miHoraRegreso" name="horaRegreso"
+                                       value="<?php echo e($valor('horaRegreso')); ?>">
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <label for="miVuelo" class="form-label">Número de vuelo</label>
+                                <input type="text" class="form-control" id="miVuelo" name="numeroVuelo"
+                                       maxlength="12" placeholder="Opcional" value="<?php echo e($valor('numeroVuelo')); ?>">
+                            </div>
+                            <div class="col-6 col-md-3 d-flex align-items-end">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="miLlaves" name="llaves" value="1"
+                                        <?php echo (int) $valor('llaves', 0) === 1 ? 'checked' : ''; ?>>
+                                    <label class="form-check-label" for="miLlaves">Se retienen las llaves</label>
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <label for="miObservacion" class="form-label">Observaciones</label>
+                                <textarea class="form-control" id="miObservacion" name="observacion" rows="2"
+                                          maxlength="500"><?php echo e($valor('observacion')); ?></textarea>
+                            </div>
+                        </div>
+                    </section>
                 </div>
 
                 <div class="modal-footer">
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-primary" id="miGuardar">
+                    <button type="submit" class="btn btn-primary">
                         <i class="bi bi-check-lg me-1"></i> Registrar ingreso
                     </button>
                 </div>
@@ -288,41 +359,5 @@ foreach ($vehiculos as $v) {
         </div>
     </div>
 </div>
-
-<script>
-(function () {
-    var vehiculos = <?php echo json_encode($vehiculosJson, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
-    var sel = document.getElementById('miVehiculo');
-    var texto = document.getElementById('miCliente');
-    var boton = document.getElementById('miGuardar');
-    if (!sel || !texto || !boton) { return; }
-
-    function porId(id) {
-        return vehiculos.find(function (v) { return String(v.idVehiculo) === String(id); }) || null;
-    }
-
-    function actualizar() {
-        var v = porId(sel.value);
-        if (!v) {
-            texto.textContent = 'El cliente se toma del propietario del vehículo.';
-            texto.className = 'form-text';
-            boton.disabled = false;
-            return;
-        }
-        if (v.propietario) {
-            texto.textContent = 'Cliente: ' + v.propietario;
-            texto.className = 'form-text text-success';
-            boton.disabled = false;
-        } else {
-            texto.textContent = 'Este vehículo no tiene propietario. Asígnalo en Vehículos.';
-            texto.className = 'form-text text-danger';
-            boton.disabled = true;
-        }
-    }
-
-    sel.addEventListener('change', actualizar);
-    actualizar();
-})();
-</script>
 
 <?php require PC_APP . '/views/layout/footer.php'; ?>

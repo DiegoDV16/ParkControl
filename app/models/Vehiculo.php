@@ -84,6 +84,16 @@ class Vehiculo
         $stmt->execute([':id' => $id]);
     }
 
+    public static function porPatente(string $patente): ?array
+    {
+        $stmt = Database::getConexion()->prepare(
+            'SELECT * FROM vehiculo WHERE patente = :patente LIMIT 1'
+        );
+        $stmt->execute([':patente' => $patente]);
+        $fila = $stmt->fetch();
+        return $fila ?: null;
+    }
+
     public static function existePatente(string $patente, int $excepto = 0): bool
     {
         $stmt = Database::getConexion()->prepare(
