@@ -77,6 +77,14 @@ class Cliente
         $stmt->execute([':estado' => $estado, ':id' => $id]);
     }
 
+    public static function porRut(string $rut): ?array
+    {
+        $stmt = Database::getConexion()->prepare('SELECT * FROM cliente WHERE rut = :rut LIMIT 1');
+        $stmt->execute([':rut' => $rut]);
+        $fila = $stmt->fetch();
+        return $fila ?: null;
+    }
+
     public static function existeRut(string $rut, int $excepto = 0): bool
     {
         $stmt = Database::getConexion()->prepare(
