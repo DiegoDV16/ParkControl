@@ -4,8 +4,7 @@
  * ParkControl · app/views/ingresos/index.php
  * ==========================================================================
  * Listado de ingresos y registro en modal. El operador escribe los datos del
- * cliente y del vehículo; el sistema los crea o reutiliza y luego inserta el
- * ingreso.
+ * cliente y elige marca/modelo del vehículo desde los catálogos.
  * ==========================================================================
  */
 
@@ -15,6 +14,19 @@ require PC_APP . '/views/layout/header.php';
 
 $valor = static fn (string $campo, mixed $defecto = '') => $old[$campo] ?? $defecto;
 $csrf = Csrf::campo();
+
+$idMarcaActual = (int) $valor('idMarca', 0);
+$idModeloActual = (int) $valor('idModelo', 0);
+$modelosMarca = $idMarcaActual > 0 ? Modelo::porMarca($idMarcaActual) : [];
+
+$modelosJson = [];
+foreach ($modelos as $m) {
+    $modelosJson[] = [
+        'idModelo' => (int) $m['idModelo'],
+        'idMarca'  => (int) $m['idMarca'],
+        'modelo'   => $m['modelo'],
+    ];
+}
 ?>
 
 <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 mb-4">
@@ -231,32 +243,36 @@ $csrf = Csrf::campo();
                     <section class="pc-jumbotron mb-3">
                         <h6 class="pc-jumbotron-titulo"><i class="bi bi-car-front me-1"></i> Datos del vehículo</h6>
                         <div class="row g-3">
-                            <div class="col-6 col-md-2">
+                            <div class="col-6 col-md-3">
                                 <label for="miPatente" class="form-label">Patente <span class="text-danger">*</span></label>
                                 <input type="text" class="form-control text-uppercase" id="miPatente" name="patente"
                                        placeholder="BBBB12" maxlength="7" required value="<?php echo e($valor('patente')); ?>">
                             </div>
                             <div class="col-6 col-md-3">
                                 <label for="miMarca" class="form-label">Marca <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control" id="miMarca" name="marca" list="listaMarcas"
-                                       maxlength="12" required value="<?php echo e($valor('marca')); ?>">
-                                <datalist id="listaMarcas">
-                                    <?php foreach (Marca::todas() as $m): ?>
-                                        <option value="<?php echo e($m['marca']); ?>"></option>
+                                <select class="form-select" id="miMarca" name="idMarca" required>
+                                    <option value="">Selecciona una marca</option>
+                                    <?php foreach ($marcas as $m): ?>
+                                        <option value="<?php echo (int) $m['idMarca']; ?>"
+                                            <?php echo $idMarcaActual === (int) $m['idMarca'] ? 'selected' : ''; ?>>
+                                            <?php echo e($m['marca']); ?>
+                                        </option>
                                     <?php endforeach; ?>
-                                </datalist>
+                                </select>
                             </div>
-                            <div class="col-6 col-md-2">
+                            <div class="col-6 col-md-3">
                                 <label for="miModelo" class="form-label">Modelo <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control" id="miModelo" name="modelo" list="listaModelos"
-                                       maxlength="12" required value="<?php echo e($valor('modelo')); ?>">
-                                <datalist id="listaModelos">
-                                    <?php foreach (Modelo::todos() as $m): ?>
-                                        <option value="<?php echo e($m['modelo']); ?>"></option>
+                                <select class="form-select" id="miModelo" name="idModelo" required>
+                                    <option value="">Selecciona un modelo</option>
+                                    <?php foreach ($modelosMarca as $m): ?>
+                                        <option value="<?php echo (int) $m['idModelo']; ?>"
+                                            <?php echo $idModeloActual === (int) $m['idModelo'] ? 'selected' : ''; ?>>
+                                            <?php echo e($m['modelo']); ?>
+                                        </option>
                                     <?php endforeach; ?>
-                                </datalist>
+                                </select>
                             </div>
-                            <div class="col-6 col-md-2">
+                            <div class="col-6 col-md-3">
                                 <label for="miTipo" class="form-label">Tipo <span class="text-danger">*</span></label>
                                 <select class="form-select" id="miTipo" name="idTipoVehiculo" required>
                                     <?php foreach ($tipos as $t): ?>
@@ -266,16 +282,6 @@ $csrf = Csrf::campo();
                                         </option>
                                     <?php endforeach; ?>
                                 </select>
-                            </div>
-                            <div class="col-6 col-md-1">
-                                <label for="miAnio" class="form-label">Año</label>
-                                <input type="number" class="form-control" id="miAnio" name="anio"
-                                       min="1950" max="<?php echo (int) date('Y') + 1; ?>" value="<?php echo e($valor('anio')); ?>">
-                            </div>
-                            <div class="col-6 col-md-2">
-                                <label for="miColor" class="form-label">Color</label>
-                                <input type="text" class="form-control" id="miColor" name="color"
-                                       maxlength="12" value="<?php echo e($valor('color')); ?>">
                             </div>
                         </div>
                     </section>
@@ -359,5 +365,35 @@ $csrf = Csrf::campo();
         </div>
     </div>
 </div>
+
+<script>
+(function () {
+    var modelos = <?php echo json_encode($modelosJson, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
+    var selMarca = document.getElementById('miMarca');
+    var selModelo = document.getElementById('miModelo');
+    if (!selMarca || !selModelo) { return; }
+
+    function pintar(idMarca, seleccionar) {
+        selModelo.innerHTML = '<option value="">Selecciona un modelo</option>';
+        modelos
+            .filter(function (m) { return String(m.idMarca) === String(idMarca); })
+            .forEach(function (m) {
+                var opcion = document.createElement('option');
+                opcion.value = m.idModelo;
+                opcion.textContent = m.modelo;
+                if (seleccionar && parseInt(m.idModelo, 10) === seleccionar) {
+                    opcion.selected = true;
+                }
+                selModelo.appendChild(opcion);
+            });
+    }
+
+    selMarca.addEventListener('change', function () { pintar(selMarca.value, 0); });
+
+    if (selMarca.value) {
+        pintar(selMarca.value, <?php echo $idModeloActual; ?>);
+    }
+})();
+</script>
 
 <?php require PC_APP . '/views/layout/footer.php'; ?>

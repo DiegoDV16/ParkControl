@@ -27,6 +27,8 @@ class IngresoController
         $filas = Fila::disponibles();
         $servicios = ServicioExtra::activos();
         $tipos = TipoVehiculo::todos();
+        $marcas = Marca::todas();
+        $modelos = Modelo::todos();
 
         $errores = $_SESSION['_errores'] ?? [];
         $old = $_SESSION['_old'] ?? [];
@@ -50,10 +52,10 @@ class IngresoController
             'correo'          => trim((string) ($_POST['correo'] ?? '')),
             // Vehículo
             'patente'         => strtoupper(preg_replace('/[^A-Za-z0-9]/', '', trim((string) ($_POST['patente'] ?? ''))) ?? ''),
-            'marca'           => trim((string) ($_POST['marca'] ?? '')),
-            'modelo'          => trim((string) ($_POST['modelo'] ?? '')),
-            'anio'            => (int) ($_POST['anio'] ?? 0),
-            'color'           => trim((string) ($_POST['color'] ?? '')),
+            'idMarca'         => (int) ($_POST['idMarca'] ?? 0),
+            'idModelo'        => (int) ($_POST['idModelo'] ?? 0),
+
+
             'idTipoVehiculo'  => (int) ($_POST['idTipoVehiculo'] ?? 0),
             // Ingreso
             'idFila'          => (int) ($_POST['idFila'] ?? 0),
@@ -79,12 +81,11 @@ class IngresoController
             ->correo('correo', 'correo')
             ->requerido('patente', 'patente')
             ->patente('patente', 'patente')
-            ->requerido('marca', 'marca')
-            ->requerido('modelo', 'modelo')
-            ->longitud('marca', 'marca', 2, 12)
-            ->longitud('modelo', 'modelo', 1, 12)
-            ->entero('anio', 'año', 1950, (int) date('Y') + 1)
-            ->longitud('color', 'color', 0, 12)
+
+            ->entero('idMarca', 'marca', 1, PHP_INT_MAX)
+            ->entero('idModelo', 'modelo', 1, PHP_INT_MAX)
+
+
             ->entero('idTipoVehiculo', 'tipo de vehículo', 1, PHP_INT_MAX)
             ->requerido('fechaInicio', 'fecha de inicio')
             ->requerido('horaInicio', 'hora de inicio')
@@ -101,6 +102,15 @@ class IngresoController
         }
         if ($datos['fechaRegreso'] !== '' && $datos['fechaRegreso'] < $datos['fechaInicio']) {
             $v->agregar('fechaRegreso', 'La fecha de regreso no puede ser anterior al inicio.');
+        }
+
+        if ($datos['idMarca'] > 0 && !Marca::existe($datos['idMarca'])) {
+            $v->agregar('idMarca', 'La marca seleccionada no es válida.');
+        }
+        if ($datos['idModelo'] > 0 && !Modelo::existe($datos['idModelo'])) {
+            $v->agregar('idModelo', 'El modelo seleccionado no es válido.');
+        } elseif ($datos['idModelo'] > 0 && Modelo::marcaDe($datos['idModelo']) !== $datos['idMarca']) {
+            $v->agregar('idModelo', 'El modelo no pertenece a la marca seleccionada.');
         }
 
         if ($datos['idTipoVehiculo'] > 0 && TipoVehiculo::porId($datos['idTipoVehiculo']) === null) {
@@ -134,10 +144,10 @@ class IngresoController
                 'telefono'        => $datos['telefono'],
                 'correo'          => $datos['correo'],
                 'patente'         => $datos['patente'],
-                'marca'           => $datos['marca'],
-                'modelo'          => $datos['modelo'],
-                'anio'            => $datos['anio'],
-                'color'           => $datos['color'],
+                'idMarca'         => $datos['idMarca'],
+                'idModelo'        => $datos['idModelo'],
+
+
                 'idTipoVehiculo'  => $datos['idTipoVehiculo'],
                 'idServicioExtra' => $datos['idServicioExtra'],
                 'idUsuario'       => (int) Auth::usuario()['id'],
