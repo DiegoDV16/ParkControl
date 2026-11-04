@@ -157,11 +157,7 @@ class Ingreso
                 ]);
             }
 
-            $marca = Marca::porNombre($datos['marca']);
-            $idMarca = $marca !== null ? (int) $marca['idMarca'] : Marca::crear($datos['marca']);
-
-            $modelo = Modelo::porNombre($idMarca, $datos['modelo']);
-            $idModelo = $modelo !== null ? (int) $modelo['idModelo'] : Modelo::crear($idMarca, $datos['modelo']);
+            $idModelo = (int) $datos['idModelo'];
 
             $vehiculo = Vehiculo::porPatente($datos['patente']);
 
@@ -175,6 +171,8 @@ class Ingreso
                 }
 
                 $idVehiculo = (int) $vehiculo['idVehiculo'];
+                $datos['anio'] = $vehiculo['anio'];
+                $datos['color'] = $vehiculo['color'];
                 Vehiculo::actualizar($idVehiculo, [
                     'idCliente'      => $idCliente,
                     'patente'        => $datos['patente'],
@@ -184,6 +182,8 @@ class Ingreso
                     'idTipoVehiculo' => $datos['idTipoVehiculo'],
                 ]);
             } else {
+                $datos['anio'] = null;
+                $datos['color'] = null;
                 $idVehiculo = Vehiculo::crear([
                     'idCliente'      => $idCliente,
                     'patente'        => $datos['patente'],

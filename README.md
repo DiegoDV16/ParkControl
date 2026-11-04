@@ -175,12 +175,12 @@ registra el cobro en `pago`.
 
 Al registrar un ingreso **no se seleccionan cliente ni vehículo**: el operador
 escribe los datos del cliente (RUT, nombres, apellidos, teléfono y correo) y
-del vehículo (patente, marca, modelo, tipo, año y color). El sistema busca por
-RUT y patente: si existen los reutiliza, y si no, los crea. Marca y modelo se
-resuelven contra sus catálogos y se crean cuando no existen. Todo ocurre en una
-sola transacción junto con la fila de `ingreso`. El formulario se abre en un
-modal con secciones tipo *jumbotron* desde el listado de ingresos, con fecha y
-hora de inicio editables.
+del vehículo (patente, marca, modelo y tipo). Marca y modelo se eligen desde
+sus catálogos, con el modelo filtrado por la marca seleccionada. El sistema
+busca por RUT y patente: si existen los reutiliza, y si no, los crea. Todo
+ocurre en una sola transacción junto con la fila de `ingreso`, que se abre en
+un modal con secciones tipo *jumbotron* desde el listado de ingresos, con fecha
+y hora de inicio editables.
 
 Los cambios de esquema se hacen **siempre** con un archivo nuevo en
 `database/migrations/` (nunca editando la base a mano) y se aplican con
