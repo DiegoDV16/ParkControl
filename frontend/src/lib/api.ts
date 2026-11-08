@@ -1,5 +1,6 @@
 import type {
   Catalogos,
+  CobroPayload,
   Fila,
   IngresoPayload,
   IngresoResumen,
@@ -7,6 +8,7 @@ import type {
   Paginated,
   PerfilPayload,
   PerfilResponse,
+  PreviewCobro,
   Rol,
   Usuario,
   UsuarioPayload,
@@ -190,6 +192,26 @@ export function estimarIngreso(params: {
 
 export function crearIngreso(datos: IngresoPayload): Promise<{ data: IngresoResumen }> {
   return request<{ data: IngresoResumen }>('/ingresos', {
+    method: 'POST',
+    body: JSON.stringify(datos),
+  })
+}
+
+export function previsualizarCobro(
+  id: number,
+  fechaRegreso: string,
+  horaRegreso: string,
+): Promise<PreviewCobro> {
+  return request<PreviewCobro>(
+    `/ingresos/${id}/preview${queryString({ fechaRegreso, horaRegreso })}`,
+  )
+}
+
+export function cobrarIngreso(
+  id: number,
+  datos: CobroPayload,
+): Promise<{ message: string; data: IngresoResumen; pago: { monto: number; vuelto: number | null; metodo: string } }> {
+  return request(`/ingresos/${id}/cobrar`, {
     method: 'POST',
     body: JSON.stringify(datos),
   })
