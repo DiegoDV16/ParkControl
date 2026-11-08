@@ -188,6 +188,7 @@ export function RecepcionPage() {
         + `en la fila ${respuesta.data.fila}. Monto proyectado: $${respuesta.data.montoProyectado.toLocaleString('es-CL')}.`,
       )
       setForm(formularioInicial())
+      setDanios(respuesta.data)
       await cargar()
     } catch (fallo) {
       setError(mensajeDeError(fallo))
@@ -478,7 +479,8 @@ export function RecepcionPage() {
       </section>
 
       <p className="text-xs text-pc-muted">
-        El cobro registra la llegada real y libera la fila. La inspección de daños en canvas queda pendiente.
+        La ficha de inspección se abre automáticamente al registrar el vehículo; también puedes abrirla
+        con el botón Daños. El cobro registra la llegada real y libera la fila.
       </p>
 
       {cobro && (
