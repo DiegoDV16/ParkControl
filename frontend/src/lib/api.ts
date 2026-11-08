@@ -1,4 +1,11 @@
-import type { LoginResponse, PerfilResponse } from '../types'
+import type {
+  LoginResponse,
+  Paginated,
+  PerfilResponse,
+  Rol,
+  Usuario,
+  UsuarioPayload,
+} from '../types'
 
 const API_URL = (import.meta.env.VITE_API_URL as string | undefined) ?? 'http://127.0.0.1:8000/api'
 const TOKEN_KEY = 'pc_token'
@@ -79,4 +86,50 @@ export function obtenerPerfil(): Promise<PerfilResponse> {
 
 export function cerrarSesion(): Promise<{ message: string }> {
   return request<{ message: string }>('/logout', { method: 'POST' })
+}
+
+function queryString(params: Record<string, string | number | undefined>): string {
+  const partes = Object.entries(params)
+    .filter(([, valor]) => valor !== undefined && valor !== '')
+    .map(([clave, valor]) => `${encodeURIComponent(clave)}=${encodeURIComponent(String(valor))}`)
+
+  return partes.length ? `?${partes.join('&')}` : ''
+}
+
+export function listarRoles(): Promise<{ data: Rol[] }> {
+  return request<{ data: Rol[] }>('/roles')
+}
+
+export function listarUsuarios(params: {
+  buscar?: string
+  idRol?: number | ''
+  estado?: number | ''
+  page?: number
+}): Promise<Paginated<Usuario>> {
+  return request<Paginated<Usuario>>(`/usuarios${queryString(params)}`)
+}
+
+export function crearUsuario(datos: UsuarioPayload): Promise<{ data: Usuario }> {
+  return request<{ data: Usuario }>('/usuarios', {
+    method: 'POST',
+    body: JSON.stringify(datos),
+  })
+}
+
+export function actualizarUsuario(id: number, datos: UsuarioPayload): Promise<{ data: Usuario }> {
+  return request<{ data: Usuario }>(`/usuarios/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(datos),
+  })
+}
+
+export function cambiarEstadoUsuario(id: number, estado: number): Promise<{ data: Usuario }> {
+  return request<{ data: Usuario }>(`/usuarios/${id}/estado`, {
+    method: 'PATCH',
+    body: JSON.stringify({ estado }),
+  })
+}
+
+export function eliminarUsuario(id: number): Promise<{ message: string }> {
+  return request<{ message: string }>(`/usuarios/${id}`, { method: 'DELETE' })
 }
