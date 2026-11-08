@@ -1,6 +1,7 @@
 import type {
   LoginResponse,
   Paginated,
+  PerfilPayload,
   PerfilResponse,
   Rol,
   Usuario,
@@ -127,6 +128,24 @@ export function cambiarEstadoUsuario(id: number, estado: number): Promise<{ data
   return request<{ data: Usuario }>(`/usuarios/${id}/estado`, {
     method: 'PATCH',
     body: JSON.stringify({ estado }),
+  })
+}
+
+export function actualizarPerfil(datos: PerfilPayload): Promise<{ usuario: Usuario; message: string }> {
+  return request<{ usuario: Usuario; message: string }>('/perfil', {
+    method: 'PUT',
+    body: JSON.stringify(datos),
+  })
+}
+
+export function cambiarContrasenaPerfil(datos: {
+  contrasena_actual: string
+  contrasena: string
+  contrasena_confirmation: string
+}): Promise<{ message: string }> {
+  return request<{ message: string }>('/perfil/password', {
+    method: 'PUT',
+    body: JSON.stringify(datos),
   })
 }
 

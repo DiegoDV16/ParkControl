@@ -5,6 +5,7 @@ import { useAuth } from '../auth/AuthContext'
 const iconos: Record<string, string> = {
   inicio: 'M3 10.5 12 3l9 7.5V21h-6v-6H9v6H3z',
   usuarios: 'M16 21v-2a4 4 0 0 0-8 0v2M12 3a4 4 0 1 1 0 8 4 4 0 0 1 0-8',
+  perfil: 'M20 21a8 8 0 1 0-16 0M12 3a4 4 0 1 1 0 8 4 4 0 0 1 0-8',
   recepcion: 'M3 13h18M5 13V7a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v6M7 13v7m10-7v7',
   filas: 'M4 5h16M4 12h16M4 19h16',
   clientes: 'M16 21v-2a4 4 0 0 0-8 0v2M12 3a4 4 0 1 1 0 8 4 4 0 0 1 0-8',
@@ -19,6 +20,7 @@ const menu = [
   { clave: 'filas', texto: 'Filas y ocupación', ruta: '/filas', disponible: false },
   { clave: 'clientes', texto: 'Clientes', ruta: '/clientes', disponible: false },
   { clave: 'reportes', texto: 'Supervisión', ruta: '/reportes', disponible: false },
+  { clave: 'perfil', texto: 'Mi perfil', ruta: '/perfil', disponible: true },
   { clave: 'config', texto: 'Configuración', ruta: '/configuracion', disponible: false },
 ]
 

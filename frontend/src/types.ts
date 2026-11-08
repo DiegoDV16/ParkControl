@@ -37,6 +37,12 @@ export interface Paginated<T> {
   }
 }
 
+export interface PerfilPayload {
+  nombres: string
+  apellidoPaterno: string
+  apellidoMaterno?: string | null
+}
+
 export interface UsuarioPayload {
   idRol: number
   rut: string
