@@ -41,7 +41,6 @@ export interface PerfilPayload {
   nombres: string
   apellidoPaterno: string
   apellidoMaterno?: string | null
-  correo: string
 }
 
 export interface UsuarioPayload {

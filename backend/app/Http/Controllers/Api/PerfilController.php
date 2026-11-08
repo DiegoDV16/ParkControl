@@ -27,8 +27,13 @@ class PerfilController extends Controller
      */
     public function update(UpdatePerfilRequest $request): JsonResponse
     {
+        $datos = $request->validated();
         $usuario = $request->user();
-        $usuario->fill($request->validated());
+        $usuario->fill([
+            'nombres' => $datos['nombres'],
+            'apellidoPaterno' => $datos['apellidoPaterno'],
+            'apellidoMaterno' => $datos['apellidoMaterno'] ?? null,
+        ]);
         $usuario->save();
 
         return response()->json([

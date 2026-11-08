@@ -19,7 +19,7 @@ export function PerfilPage() {
   const [nombres, setNombres] = useState(usuario?.nombres ?? '')
   const [apellidoPaterno, setApellidoPaterno] = useState(usuario?.apellidoPaterno ?? '')
   const [apellidoMaterno, setApellidoMaterno] = useState(usuario?.apellidoMaterno ?? '')
-  const [correo, setCorreo] = useState(usuario?.correo ?? '')
+
 
   const [guardandoDatos, setGuardandoDatos] = useState(false)
   const [datosOk, setDatosOk] = useState<string | null>(null)
@@ -45,7 +45,6 @@ export function PerfilPage() {
         nombres: nombres.trim(),
         apellidoPaterno: apellidoPaterno.trim(),
         apellidoMaterno: apellidoMaterno.trim() || null,
-        correo: correo.trim(),
       })
       actualizarUsuarioSesion(respuesta.usuario)
       setDatosOk(respuesta.message)
@@ -126,9 +125,8 @@ export function PerfilPage() {
               </div>
             </div>
             <div>
-              <label htmlFor="pCorreo" className="pc-label">Correo *</label>
-              <input id="pCorreo" type="email" className="pc-input" maxLength={65} required value={correo}
-                onChange={(evento) => setCorreo(evento.target.value)} />
+              <label htmlFor="pCorreo" className="pc-label">Correo (no editable)</label>
+              <input id="pCorreo" type="email" className="pc-input opacity-60" value={usuario.correo} disabled readOnly />
             </div>
             <div>
               <label htmlFor="pRol" className="pc-label">Rol</label>
