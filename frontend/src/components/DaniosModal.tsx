@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Modal } from './Modal'
-import { CanvasDanios } from './CanvasDanios'
+import { CanvasDanios, ETIQUETAS_VISTA } from './CanvasDanios'
 import { ApiError, crearDanio, eliminarDanio, listarDanios } from '../lib/api'
-import type { Danio, IngresoResumen } from '../types'
+import type { Danio, IngresoResumen, VistaDanio } from '../types'
 
 const TIPOS = ['Rayón', 'Abolladura', 'Golpe', 'Vidrio', 'Espejo', 'Llanta', 'Otro']
 
@@ -30,7 +30,7 @@ export function DaniosModal({ ingreso, soloLectura, onCerrar }: Props) {
       .catch((fallo) => setError(mensajeDeError(fallo)))
   }, [ingreso.idIngreso])
 
-  async function marcar(coordX: number, coordY: number) {
+  async function marcar(vista: VistaDanio, coordX: number, coordY: number) {
     if (soloLectura || guardando) return
 
     setGuardando(true)
@@ -38,6 +38,7 @@ export function DaniosModal({ ingreso, soloLectura, onCerrar }: Props) {
 
     try {
       const respuesta = await crearDanio(ingreso.idIngreso, {
+        vista,
         coordX,
         coordY,
         tipoDanio: tipo,
@@ -74,7 +75,7 @@ export function DaniosModal({ ingreso, soloLectura, onCerrar }: Props) {
         <p className="text-sm text-pc-muted">
           {soloLectura
             ? 'Vista de solo lectura de los daños registrados al ingreso.'
-            : 'Elige el tipo, escribe el detalle y toca la vista del vehículo (superior, lateral, frontal o trasera) para marcar el daño.'}
+            : 'Elige el tipo, escribe el detalle y toca la vista del vehículo (superior, lateral izquierda/derecha, frontal o trasera) para marcar el daño.'}
         </p>
 
         {error && (
@@ -87,7 +88,7 @@ export function DaniosModal({ ingreso, soloLectura, onCerrar }: Props) {
           <CanvasDanios
             danios={danios}
             soloLectura={soloLectura}
-            onMarcar={(x, y) => void marcar(x, y)}
+            onMarcar={(vista, x, y) => void marcar(vista, x, y)}
             onEliminar={(id) => void quitar(id)}
           />
 
@@ -127,6 +128,9 @@ export function DaniosModal({ ingreso, soloLectura, onCerrar }: Props) {
                     </span>
                     <div className="min-w-0 flex-1">
                       <p className="font-medium">{danio.tipoDanio}</p>
+                      <p className="text-[10px] uppercase tracking-wide text-pc-muted">
+                        {ETIQUETAS_VISTA[danio.vista] ?? danio.vista}
+                      </p>
                       {danio.detalle && <p className="text-xs text-pc-muted">{danio.detalle}</p>}
                     </div>
                     {!soloLectura && (
