@@ -22,6 +22,7 @@ interface AuthContextValue {
   cargando: boolean
   iniciarSesion: (correo: string, contrasena: string) => Promise<void>
   salir: () => Promise<void>
+  actualizarUsuarioSesion: (usuario: Usuario) => void
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
@@ -70,9 +71,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUsuario(null)
   }, [])
 
+  const actualizarUsuarioSesion = useCallback((actualizado: Usuario) => {
+    setUsuario(actualizado)
+  }, [])
+
   const valor = useMemo(
-    () => ({ usuario, cargando, iniciarSesion, salir }),
-    [usuario, cargando, iniciarSesion, salir],
+    () => ({ usuario, cargando, iniciarSesion, salir, actualizarUsuarioSesion }),
+    [usuario, cargando, iniciarSesion, salir, actualizarUsuarioSesion],
   )
 
   return <AuthContext.Provider value={valor}>{children}</AuthContext.Provider>

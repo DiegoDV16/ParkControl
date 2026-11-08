@@ -2,8 +2,11 @@ import { Navigate, Route, Routes } from 'react-router-dom'
 import { ProtectedRoute } from './auth/ProtectedRoute'
 import { AppLayout } from './layouts/AppLayout'
 import { DashboardPage } from './pages/DashboardPage'
+import { FilasPage } from './pages/FilasPage'
 import { ForbiddenPage } from './pages/ForbiddenPage'
 import { LoginPage } from './pages/LoginPage'
+import { PerfilPage } from './pages/PerfilPage'
+import { UsuariosPage } from './pages/UsuariosPage'
 
 export default function App() {
   return (
@@ -13,6 +16,12 @@ export default function App() {
       <Route element={<ProtectedRoute />}>
         <Route element={<AppLayout />}>
           <Route index element={<DashboardPage />} />
+          <Route path="perfil" element={<PerfilPage />} />
+          <Route path="filas" element={<FilasPage />} />
+
+          <Route element={<ProtectedRoute roles={[1]} />}>
+            <Route path="usuarios" element={<UsuariosPage />} />
+          </Route>
         </Route>
       </Route>
 
