@@ -74,7 +74,7 @@ export function DaniosModal({ ingreso, soloLectura, onCerrar }: Props) {
         <p className="text-sm text-pc-muted">
           {soloLectura
             ? 'Vista de solo lectura de los daños registrados al ingreso.'
-            : 'Elige el tipo, escribe el detalle y toca el vehículo para marcar el daño.'}
+            : 'Elige el tipo, escribe el detalle y toca la vista del vehículo (superior, lateral, frontal o trasera) para marcar el daño.'}
         </p>
 
         {error && (
