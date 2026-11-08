@@ -246,6 +246,51 @@ export function eliminarDanio(idDanio: number): Promise<{ message: string }> {
   return request<{ message: string }>(`/danios/${idDanio}`, { method: 'DELETE' })
 }
 
+export async function subirInspeccion(
+  idIngreso: number,
+  imagen: Blob,
+  sinDanios: boolean,
+): Promise<{ message: string; url: string; ruta: string }> {
+  const formulario = new FormData()
+  formulario.append('imagen', imagen, `inspeccion-${idIngreso}.webp`)
+  formulario.append('sinDanios', sinDanios ? '1' : '0')
+
+  const cabeceras: Record<string, string> = { Accept: 'application/json' }
+  const token = getToken()
+  if (token) cabeceras.Authorization = `Bearer ${token}`
+
+  let respuesta: Response
+  try {
+    respuesta = await fetch(`${API_URL}/ingresos/${idIngreso}/inspeccion`, {
+      method: 'POST',
+      headers: cabeceras,
+      body: formulario,
+    })
+  } catch {
+    throw new ApiError(0, 'No se pudo conectar con el servidor.')
+  }
+
+  const texto = await respuesta.text()
+  let datos: { message?: string; url?: string; ruta?: string } = {}
+  if (texto) {
+    try {
+      datos = JSON.parse(texto) as typeof datos
+    } catch {
+      datos = {}
+    }
+  }
+
+  if (!respuesta.ok) {
+    throw new ApiError(respuesta.status, datos.message ?? 'No se pudo guardar la inspección.')
+  }
+
+  return {
+    message: datos.message ?? 'Inspección guardada.',
+    url: datos.url ?? '',
+    ruta: datos.ruta ?? '',
+  }
+}
+
 export function eliminarUsuario(id: number, forzar = false): Promise<{ message: string }> {
   return request<{ message: string }>(`/usuarios/${id}${forzar ? '?force=1' : ''}`, {
     method: 'DELETE',
