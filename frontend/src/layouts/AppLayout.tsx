@@ -16,7 +16,7 @@ const iconos: Record<string, string> = {
 const menu = [
   { clave: 'inicio', texto: 'Inicio', ruta: '/', disponible: true },
   { clave: 'usuarios', texto: 'Usuarios', ruta: '/usuarios', disponible: true },
-  { clave: 'recepcion', texto: 'Recepción en patio', ruta: '/recepcion', disponible: false },
+  { clave: 'recepcion', texto: 'Recepción en patio', ruta: '/recepcion', disponible: true },
   { clave: 'filas', texto: 'Filas y ocupación', ruta: '/filas', disponible: true },
   { clave: 'clientes', texto: 'Clientes', ruta: '/clientes', disponible: false },
   { clave: 'reportes', texto: 'Supervisión', ruta: '/reportes', disponible: false },
@@ -47,7 +47,10 @@ export function AppLayout() {
 
   const navegacion = (
     <nav className="mt-6 flex flex-col gap-1">
-      {menu.filter((item) => item.clave !== 'usuarios' || usuario?.idRol === 1).map((item) =>
+      {menu
+        .filter((item) => item.clave !== 'usuarios' || usuario?.idRol === 1)
+        .filter((item) => item.clave !== 'recepcion' || usuario?.idRol !== 3)
+        .map((item) =>
         item.disponible ? (
           <NavLink
             key={item.clave}

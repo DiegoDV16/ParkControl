@@ -6,6 +6,7 @@ import { FilasPage } from './pages/FilasPage'
 import { ForbiddenPage } from './pages/ForbiddenPage'
 import { LoginPage } from './pages/LoginPage'
 import { PerfilPage } from './pages/PerfilPage'
+import { RecepcionPage } from './pages/RecepcionPage'
 import { UsuariosPage } from './pages/UsuariosPage'
 
 export default function App() {
@@ -18,6 +19,10 @@ export default function App() {
           <Route index element={<DashboardPage />} />
           <Route path="perfil" element={<PerfilPage />} />
           <Route path="filas" element={<FilasPage />} />
+
+          <Route element={<ProtectedRoute roles={[1, 2]} />}>
+            <Route path="recepcion" element={<RecepcionPage />} />
+          </Route>
 
           <Route element={<ProtectedRoute roles={[1]} />}>
             <Route path="usuarios" element={<UsuariosPage />} />
