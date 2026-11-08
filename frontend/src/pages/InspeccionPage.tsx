@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { InspeccionVehicular } from '../components/inspeccion/InspeccionVehicular'
 import type { InspeccionExportada } from '../components/inspeccion/tipos'
 import { ApiError, listarIngresos, subirInspeccion } from '../lib/api'
 import type { IngresoResumen } from '../types'
 
 export function InspeccionPage() {
+  const [parametros] = useSearchParams()
   const [ingresos, setIngresos] = useState<IngresoResumen[]>([])
   const [idSeleccionado, setIdSeleccionado] = useState('')
   const [cargando, setCargando] = useState(true)
@@ -16,7 +18,13 @@ export function InspeccionPage() {
     listarIngresos()
       .then((respuesta) => {
         setIngresos(respuesta.data)
-        if (respuesta.data[0]) setIdSeleccionado(String(respuesta.data[0].idIngreso))
+        const solicitado = parametros.get('ingreso')
+        const existe = respuesta.data.some((ingreso) => String(ingreso.idIngreso) === solicitado)
+        if (existe && solicitado) {
+          setIdSeleccionado(solicitado)
+        } else if (respuesta.data[0]) {
+          setIdSeleccionado(String(respuesta.data[0].idIngreso))
+        }
       })
       .catch((fallo) => {
         setError(fallo instanceof ApiError ? fallo.message : 'No se pudieron cargar los vehículos.')

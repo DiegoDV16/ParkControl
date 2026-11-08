@@ -1,18 +1,20 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
 import { CobroModal } from '../components/CobroModal'
-import { DaniosModal } from '../components/DaniosModal'
-import { DaniosBorradorModal } from '../components/DaniosBorradorModal'
+import { Modal } from '../components/Modal'
+import { InspeccionVehicular } from '../components/inspeccion/InspeccionVehicular'
+import type { InspeccionExportada } from '../components/inspeccion/tipos'
 import {
   ApiError,
-  crearDanio,
   crearIngreso,
   estimarIngreso,
   listarFilas,
   listarIngresos,
   obtenerCatalogos,
+  subirInspeccion,
 } from '../lib/api'
-import type { Catalogos, Danio, Fila, IngresoResumen } from '../types'
+import type { Catalogos, Fila, IngresoResumen } from '../types'
 
 function mensajeDeError(fallo: unknown): string {
   if (fallo instanceof ApiError) {
@@ -69,6 +71,7 @@ function formularioInicial() {
 
 export function RecepcionPage() {
   const { usuario } = useAuth()
+  const navegar = useNavigate()
   const esJefatura = usuario?.idRol === 3
 
   const [catalogos, setCatalogos] = useState<Catalogos | null>(null)
@@ -81,9 +84,8 @@ export function RecepcionPage() {
   const [form, setForm] = useState(formularioInicial())
   const [estimacion, setEstimacion] = useState<{ dias: number; monto: number } | null>(null)
   const [cobro, setCobro] = useState<IngresoResumen | null>(null)
-  const [danios, setDanios] = useState<IngresoResumen | null>(null)
-  const [borrador, setBorrador] = useState<Danio[]>([])
-  const [abrirBorrador, setAbrirBorrador] = useState(false)
+  const [inspeccion, setInspeccion] = useState<InspeccionExportada | null>(null)
+  const [abrirInspeccion, setAbrirInspeccion] = useState(false)
 
   const cargar = useCallback(async () => {
     setCargando(true)
@@ -154,9 +156,6 @@ export function RecepcionPage() {
   }
 
   const modelos = catalogos?.marcas.find((marca) => String(marca.idMarca) === form.idMarca)?.modelos ?? []
-  const tipoVehiculo = catalogos?.tipos.find(
-    (tipo) => String(tipo.idTipoVehiculo) === form.idTipoVehiculo,
-  )?.tipoVehiculo ?? null
   const filaSeleccionada = filas.find((fila) => String(fila.idFila) === form.idFila)
   const servicioSeleccionado = catalogos?.servicios.find(
     (servicio) => String(servicio.idServicioExtra) === form.idServicioExtra,
@@ -190,22 +189,22 @@ export function RecepcionPage() {
         observacion: form.observacion.trim() || null,
       })
 
+      let aviso = ''
+      if (inspeccion) {
+        try {
+          await subirInspeccion(respuesta.data.idIngreso, inspeccion.blob, inspeccion.sinDanios)
+          aviso = ' Inspección guardada.'
+        } catch {
+          aviso = ' El ingreso se registró, pero la inspección no se pudo guardar.'
+        }
+      }
+
       setOk(
         `Ingreso #${respuesta.data.idIngreso} registrado para ${respuesta.data.vehiculo.patente} `
-        + `en la fila ${respuesta.data.fila}. Monto proyectado: $${respuesta.data.montoProyectado.toLocaleString('es-CL')}.`,
+        + `en la fila ${respuesta.data.fila}. Monto proyectado: $${respuesta.data.montoProyectado.toLocaleString('es-CL')}.${aviso}`,
       )
-      for (const danio of borrador) {
-        await crearDanio(respuesta.data.idIngreso, {
-          vista: danio.vista,
-          coordX: danio.coordX,
-          coordY: danio.coordY,
-          tipoDanio: danio.tipoDanio,
-          detalle: danio.detalle,
-        })
-      }
-      setBorrador([])
+      setInspeccion(null)
       setForm(formularioInicial())
-      setDanios(respuesta.data)
       await cargar()
     } catch (fallo) {
       setError(mensajeDeError(fallo))
@@ -397,11 +396,15 @@ export function RecepcionPage() {
           </section>
 
           <div className="flex flex-wrap items-center gap-3 rounded-lg border border-pc-border bg-pc-panel2/40 px-4 py-3">
-            <button type="button" className="pc-btn-ghost" onClick={() => setAbrirBorrador(true)}>
-              Inspección de daños{borrador.length > 0 ? ` (${borrador.length})` : ''}
+            <button type="button" className="pc-btn-ghost" onClick={() => setAbrirInspeccion(true)}>
+              Inspección de daños
             </button>
             <span className="text-xs text-pc-muted">
-              Marca los daños antes de registrar; se guardan junto con el ingreso.
+              {inspeccion
+                ? (inspeccion.sinDanios
+                  ? 'Inspección marcada sin daños visibles.'
+                  : 'Inspección capturada con daños.')
+                : 'Dibuja los daños antes de registrar; se guardan junto con el ingreso.'}
             </span>
           </div>
           <div className="text-sm">
@@ -418,7 +421,7 @@ export function RecepcionPage() {
             <button
               type="button"
               className="pc-btn-ghost"
-              onClick={() => { setForm(formularioInicial()); setEstimacion(null); setBorrador([]) }}
+              onClick={() => { setForm(formularioInicial()); setEstimacion(null); setInspeccion(null) }}
               disabled={enviando}
             >
               Limpiar
@@ -482,9 +485,9 @@ export function RecepcionPage() {
                     <button
                       type="button"
                       className="pc-btn-ghost mt-1 px-2 text-xs"
-                      onClick={() => setDanios(ingreso)}
+                      onClick={() => navegar(`/inspeccion?ingreso=${ingreso.idIngreso}`)}
                     >
-                      Daños
+                      Inspección
                     </button>
                     {!esJefatura && (
                       <button
@@ -504,8 +507,8 @@ export function RecepcionPage() {
       </section>
 
       <p className="text-xs text-pc-muted">
-        La ficha de inspección se abre automáticamente al registrar el vehículo; también puedes abrirla
-        con el botón Daños. El cobro registra la llegada real y libera la fila.
+        La ficha de inspección se abre desde el formulario o con el botón Inspección. El cobro registra
+        la llegada real y libera la fila.
       </p>
 
       {cobro && (
@@ -520,21 +523,23 @@ export function RecepcionPage() {
         />
       )}
 
-      {danios && (
-        <DaniosModal
-          ingreso={danios}
-          soloLectura={esJefatura}
-          onCerrar={() => setDanios(null)}
-        />
-      )}
-
-      {abrirBorrador && (
-        <DaniosBorradorModal
-          danios={borrador}
-          tipo={tipoVehiculo}
-          onCambiar={setBorrador}
-          onCerrar={() => setAbrirBorrador(false)}
-        />
+      {abrirInspeccion && (
+        <Modal
+          abierto
+          titulo="Inspección de daños"
+          onCerrar={() => setAbrirInspeccion(false)}
+          ancho="max-w-6xl"
+        >
+          <InspeccionVehicular
+            onGuardar={(resultado) => {
+              setInspeccion(resultado)
+              setAbrirInspeccion(false)
+              setOk(resultado.sinDanios
+                ? 'Inspección capturada: sin daños visibles.'
+                : 'Inspección capturada con daños.')
+            }}
+          />
+        </Modal>
       )}
     </div>
   )
