@@ -1,5 +1,8 @@
 import type {
+  Catalogos,
   Fila,
+  IngresoPayload,
+  IngresoResumen,
   LoginResponse,
   Paginated,
   PerfilPayload,
@@ -161,6 +164,21 @@ export function actualizarFila(
   return request<{ data: Fila; message: string }>(`/filas/${id}`, {
     method: 'PUT',
     body: JSON.stringify({ capacidadTotal }),
+  })
+}
+
+export function obtenerCatalogos(): Promise<Catalogos> {
+  return request<Catalogos>('/catalogos')
+}
+
+export function listarIngresos(): Promise<Paginated<IngresoResumen>> {
+  return request<Paginated<IngresoResumen>>('/ingresos')
+}
+
+export function crearIngreso(datos: IngresoPayload): Promise<{ data: IngresoResumen }> {
+  return request<{ data: IngresoResumen }>('/ingresos', {
+    method: 'POST',
+    body: JSON.stringify(datos),
   })
 }
 
