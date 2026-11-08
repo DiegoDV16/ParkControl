@@ -37,6 +37,7 @@ Route::middleware(['auth:sanctum', 'role:ADMINISTRADOR,OPERADOR'])->group(functi
     Route::post('/ingresos', [IngresoController::class, 'store']);
     Route::post('/ingresos/{ingreso}/cobrar', [IngresoController::class, 'cobrar']);
     Route::post('/ingresos/{ingreso}/danios', [DanioController::class, 'store']);
+    Route::put('/danios/{danio}', [DanioController::class, 'update']);
     Route::delete('/danios/{danio}', [DanioController::class, 'destroy']);
 });
 

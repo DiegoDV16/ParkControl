@@ -232,6 +232,16 @@ export function crearDanio(
   })
 }
 
+export function actualizarDanio(
+  idDanio: number,
+  datos: Partial<{ vista: string; coordX: number; coordY: number; tipoDanio: string; detalle: string | null }>,
+): Promise<{ data: Danio }> {
+  return request<{ data: Danio }>(`/danios/${idDanio}`, {
+    method: 'PUT',
+    body: JSON.stringify(datos),
+  })
+}
+
 export function eliminarDanio(idDanio: number): Promise<{ message: string }> {
   return request<{ message: string }>(`/danios/${idDanio}`, { method: 'DELETE' })
 }

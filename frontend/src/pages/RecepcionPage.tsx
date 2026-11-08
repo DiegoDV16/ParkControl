@@ -154,6 +154,9 @@ export function RecepcionPage() {
   }
 
   const modelos = catalogos?.marcas.find((marca) => String(marca.idMarca) === form.idMarca)?.modelos ?? []
+  const tipoVehiculo = catalogos?.tipos.find(
+    (tipo) => String(tipo.idTipoVehiculo) === form.idTipoVehiculo,
+  )?.tipoVehiculo ?? null
   const filaSeleccionada = filas.find((fila) => String(fila.idFila) === form.idFila)
   const servicioSeleccionado = catalogos?.servicios.find(
     (servicio) => String(servicio.idServicioExtra) === form.idServicioExtra,
@@ -528,6 +531,7 @@ export function RecepcionPage() {
       {abrirBorrador && (
         <DaniosBorradorModal
           danios={borrador}
+          tipo={tipoVehiculo}
           onCambiar={setBorrador}
           onCerrar={() => setAbrirBorrador(false)}
         />

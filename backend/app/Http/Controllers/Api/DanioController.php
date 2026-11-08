@@ -39,6 +39,21 @@ class DanioController extends Controller
         return response()->json(['data' => $danio], 201);
     }
 
+    public function update(Request $request, DanioVehiculo $danio): JsonResponse
+    {
+        $datos = $request->validate([
+            'vista' => ['sometimes', 'string', Rule::in(self::VISTAS)],
+            'coordX' => ['sometimes', 'numeric', 'min:0', 'max:100'],
+            'coordY' => ['sometimes', 'numeric', 'min:0', 'max:100'],
+            'tipoDanio' => ['sometimes', 'string', Rule::in(self::TIPOS)],
+            'detalle' => ['nullable', 'string', 'max:150'],
+        ]);
+
+        $danio->fill($datos)->save();
+
+        return response()->json(['data' => $danio]);
+    }
+
     public function destroy(DanioVehiculo $danio): JsonResponse
     {
         $danio->delete();

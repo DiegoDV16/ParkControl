@@ -1,7 +1,13 @@
 import { useEffect, useState } from 'react'
 import { Modal } from './Modal'
 import { CanvasDanios, ETIQUETAS_VISTA } from './CanvasDanios'
-import { ApiError, crearDanio, eliminarDanio, listarDanios } from '../lib/api'
+import {
+  actualizarDanio,
+  ApiError,
+  crearDanio,
+  eliminarDanio,
+  listarDanios,
+} from '../lib/api'
 import type { Danio, IngresoResumen, VistaDanio } from '../types'
 
 const TIPOS = ['Rayón', 'Abolladura', 'Golpe', 'Vidrio', 'Espejo', 'Llanta', 'Otro']
@@ -23,6 +29,9 @@ export function DaniosModal({ ingreso, soloLectura, onCerrar }: Props) {
   const [detalle, setDetalle] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [guardando, setGuardando] = useState(false)
+  const [editando, setEditando] = useState<number | null>(null)
+  const [editTipo, setEditTipo] = useState(TIPOS[0])
+  const [editDetalle, setEditDetalle] = useState('')
 
   useEffect(() => {
     listarDanios(ingreso.idIngreso)
@@ -64,6 +73,49 @@ export function DaniosModal({ ingreso, soloLectura, onCerrar }: Props) {
     }
   }
 
+  function mover(idDanio: number, coordX: number, coordY: number) {
+    setDanios((previos) => previos.map((danio) => (
+      danio.idDanio === idDanio ? { ...danio, coordX, coordY } : danio
+    )))
+  }
+
+  async function moverFin(idDanio: number, coordX: number, coordY: number) {
+    try {
+      const respuesta = await actualizarDanio(idDanio, { coordX, coordY })
+      setDanios((previos) => previos.map((danio) => (
+        danio.idDanio === idDanio ? respuesta.data : danio
+      )))
+    } catch (fallo) {
+      setError(mensajeDeError(fallo))
+    }
+  }
+
+  function abrirEdicion(danio: Danio) {
+    setEditando(danio.idDanio)
+    setEditTipo(danio.tipoDanio)
+    setEditDetalle(danio.detalle ?? '')
+  }
+
+  async function guardarEdicion(idDanio: number) {
+    setGuardando(true)
+    setError(null)
+
+    try {
+      const respuesta = await actualizarDanio(idDanio, {
+        tipoDanio: editTipo,
+        detalle: editDetalle.trim() || null,
+      })
+      setDanios((previos) => previos.map((danio) => (
+        danio.idDanio === idDanio ? respuesta.data : danio
+      )))
+      setEditando(null)
+    } catch (fallo) {
+      setError(mensajeDeError(fallo))
+    } finally {
+      setGuardando(false)
+    }
+  }
+
   return (
     <Modal
       abierto
@@ -75,7 +127,7 @@ export function DaniosModal({ ingreso, soloLectura, onCerrar }: Props) {
         <p className="text-sm text-pc-muted">
           {soloLectura
             ? 'Vista de solo lectura de los daños registrados al ingreso.'
-            : 'Elige el tipo, escribe el detalle y toca la vista del vehículo (superior, lateral izquierda/derecha, frontal o trasera) para marcar el daño.'}
+            : 'Elige el tipo, escribe el detalle y toca la vista del vehículo. Puedes arrastrar los marcadores y editarlos desde la lista.'}
         </p>
 
         {error && (
@@ -87,9 +139,11 @@ export function DaniosModal({ ingreso, soloLectura, onCerrar }: Props) {
         <div className="grid gap-4 lg:grid-cols-[1.5fr_1fr]">
           <CanvasDanios
             danios={danios}
+            tipo={ingreso.vehiculo.tipo}
             soloLectura={soloLectura}
             onMarcar={(vista, x, y) => void marcar(vista, x, y)}
-            onEliminar={(id) => void quitar(id)}
+            onMover={mover}
+            onMoverFin={(id, x, y) => void moverFin(id, x, y)}
           />
 
           <div className="space-y-3">
@@ -117,27 +171,60 @@ export function DaniosModal({ ingreso, soloLectura, onCerrar }: Props) {
               <div className="border-b border-pc-border px-3 py-2 text-xs uppercase tracking-wide text-pc-muted">
                 Daños marcados ({danios.length})
               </div>
-              <ul className="max-h-56 divide-y divide-pc-border/60 overflow-y-auto text-sm">
+              <ul className="max-h-64 divide-y divide-pc-border/60 overflow-y-auto text-sm">
                 {danios.length === 0 && (
                   <li className="px-3 py-4 text-center text-xs text-pc-muted">Sin daños registrados.</li>
                 )}
                 {danios.map((danio, indice) => (
-                  <li key={danio.idDanio} className="flex items-start gap-2 px-3 py-2">
-                    <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-pc-danger text-[10px] font-bold text-[#1a0505]">
-                      {indice + 1}
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <p className="font-medium">{danio.tipoDanio}</p>
-                      <p className="text-[10px] uppercase tracking-wide text-pc-muted">
-                        {ETIQUETAS_VISTA[danio.vista] ?? danio.vista}
-                      </p>
-                      {danio.detalle && <p className="text-xs text-pc-muted">{danio.detalle}</p>}
+                  <li key={danio.idDanio} className="px-3 py-2">
+                    <div className="flex items-start gap-2">
+                      <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-pc-danger text-[10px] font-bold text-[#1a0505]">
+                        {indice + 1}
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium">{danio.tipoDanio}</p>
+                        <p className="text-[10px] uppercase tracking-wide text-pc-muted">
+                          {ETIQUETAS_VISTA[danio.vista] ?? danio.vista}
+                        </p>
+                        {danio.detalle && <p className="text-xs text-pc-muted">{danio.detalle}</p>}
+                      </div>
+                      {!soloLectura && (
+                        <div className="flex gap-2">
+                          <button type="button" className="text-xs text-pc-mint hover:underline"
+                            onClick={() => abrirEdicion(danio)}>
+                            Editar
+                          </button>
+                          <button type="button" className="text-xs text-pc-danger hover:underline"
+                            onClick={() => void quitar(danio.idDanio)}>
+                            Quitar
+                          </button>
+                        </div>
+                      )}
                     </div>
-                    {!soloLectura && (
-                      <button type="button" className="text-xs text-pc-danger hover:underline"
-                        onClick={() => void quitar(danio.idDanio)}>
-                        Quitar
-                      </button>
+
+                    {editando === danio.idDanio && !soloLectura && (
+                      <div className="mt-2 space-y-2 rounded-lg border border-pc-border bg-pc-panel2/50 p-2">
+                        <select className="pc-input" value={editTipo}
+                          onChange={(evento) => setEditTipo(evento.target.value)}>
+                          {TIPOS.map((item) => (
+                            <option key={item} value={item}>{item}</option>
+                          ))}
+                        </select>
+                        <input className="pc-input" maxLength={150} value={editDetalle}
+                          onChange={(evento) => setEditDetalle(evento.target.value)}
+                          placeholder="Detalle" />
+                        <div className="flex justify-end gap-2">
+                          <button type="button" className="pc-btn-ghost px-2 text-xs"
+                            onClick={() => setEditando(null)}>
+                            Cancelar
+                          </button>
+                          <button type="button" className="pc-btn-primary px-2 text-xs"
+                            disabled={guardando}
+                            onClick={() => void guardarEdicion(danio.idDanio)}>
+                            Guardar
+                          </button>
+                        </div>
+                      </div>
                     )}
                   </li>
                 ))}
