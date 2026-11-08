@@ -24,10 +24,10 @@ interface ConfigVista {
 
 const VISTAS: ConfigVista[] = [
   { vista: 'frontal', etiqueta: 'Frontal', aspecto: '240 / 180', vw: 240, vh: 180 },
-  { vista: 'lateral_izquierda', etiqueta: 'Lateral izquierdo', aspecto: '500 / 170', vw: 500, vh: 170 },
-  { vista: 'superior', etiqueta: 'Superior', aspecto: '200 / 420', vw: 200, vh: 420 },
+  { vista: 'lateral_izquierda', etiqueta: 'Lateral izquierdo', aspecto: '520 / 180', vw: 520, vh: 180 },
+  { vista: 'superior', etiqueta: 'Superior', aspecto: '200 / 440', vw: 200, vh: 440 },
   { vista: 'trasera', etiqueta: 'Trasera', aspecto: '240 / 180', vw: 240, vh: 180 },
-  { vista: 'lateral_derecha', etiqueta: 'Lateral derecho', aspecto: '500 / 170', vw: 500, vh: 170 },
+  { vista: 'lateral_derecha', etiqueta: 'Lateral derecho', aspecto: '520 / 180', vw: 520, vh: 180 },
 ]
 
 const COLORES = [
