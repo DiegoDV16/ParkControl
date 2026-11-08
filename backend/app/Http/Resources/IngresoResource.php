@@ -69,6 +69,13 @@ class IngresoResource extends JsonResource
             'minutos' => $minutos,
             'dias' => $dias,
             'montoProyectado' => $monto,
+            'danios' => $this->whenLoaded('danios', fn () => $this->danios->map(fn ($danio) => [
+                'idDanio' => (int) $danio->idDanio,
+                'coordX' => (float) $danio->coordX,
+                'coordY' => (float) $danio->coordY,
+                'tipoDanio' => $danio->tipoDanio,
+                'detalle' => $danio->detalle,
+            ])->values()),
         ];
     }
 }

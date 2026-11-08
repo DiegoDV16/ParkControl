@@ -80,6 +80,14 @@ export interface Catalogos {
   tipos: TipoVehiculoCatalogo[]
 }
 
+export interface Danio {
+  idDanio: number
+  coordX: number
+  coordY: number
+  tipoDanio: string
+  detalle: string | null
+}
+
 export interface IngresoResumen {
   idIngreso: number
   estado: string
@@ -95,6 +103,7 @@ export interface IngresoResumen {
   servicio: string | null
   dias: number
   montoProyectado: number
+  danios?: Danio[]
 }
 
 export interface IngresoPayload {
