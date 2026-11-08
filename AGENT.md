@@ -1,60 +1,100 @@
 # Instrucciones para el agente de ParkControl
 
-Estas instrucciones están dirigidas a DeepSeek y a cualquier agente de IA o desarrollador que desarrolle, refactorice o mantenga este proyecto.
+Estas instrucciones están dirigidas a DeepSeek y a cualquier agente que
+desarrolle o mantenga este proyecto.
 
----
+## Contexto del proyecto
 
-## 1. Contexto y Arquitectura del Proyecto
+- ParkControl es un sistema de control de estacionamiento de larga estadía
+  (asociado a viajes y custodia de vehículos) con interfaz y textos
+  exclusivamente en español.
+- La arquitectura del proyecto es un monolito desacoplado:
+  - Backend: API REST construida en PHP 8.2 o superior con Laravel y
+    autenticación de tokens vía Laravel Sanctum.
+  - Frontend: Single Page Application (SPA) responsiva desarrollada en React
+    con Vite, TypeScript, React Router y Tailwind CSS, optimizada para PC y
+    tablets táctiles en garita.
+  - Base de datos: MySQL / MariaDB ejecutada localmente con XAMPP y
+    administrada mediante phpMyAdmin.
+- No se manejan cajas de cobro tradicionales ni aperturas/cierres de turno en
+  tiempo real. Los cobros corresponden a liquidaciones y estimaciones calculadas
+  por tramos de días y servicios adicionales al generar reportes o liquidar la
+  salida.
 
-- **ParkControl** es un sistema integral de gestión y control de estacionamientos en tiempo real, operado desde PC de escritorio y Tablets táctiles.
-- **Idioma:** Todos los textos de la interfaz, validaciones, comentarios y documentación deben mantenerse exclusivamente en **español**.
-- **Arquitectura:** Monolito desacoplado en dos capas principales:
-  - **Backend (API REST):** PHP 8.2+ con **Laravel**. Expone endpoints JSON limpios, gestiona la autenticación con **Laravel Sanctum**, aplica reglas de negocio y maneja el control de concurrencia.
-  - **Frontend (SPA):** **React** inicializado con **Vite**, **TypeScript**, **React Router** y estilizado con **Tailwind CSS**. Optimizado con áreas táctiles amplias para tablets en garita/terreno.
-  - **Base de Datos:** **MySQL / MariaDB** ejecutado localmente mediante **XAMPP** y administrado vía **phpMyAdmin**.
+## Reglas de desarrollo
 
----
+- Escribe código compatible con PHP 8.2 o superior en el backend. Aplica tipos
+  estrictos, Form Requests para validación de entradas, API Resources para
+  respuestas estructuradas y middlewares de rol.
+- Respeta la estructura de API REST y no mezcles vistas Blade tradicionales con
+  la interfaz de React.
+- Accede a MySQL a través de migraciones y modelos de Eloquent ORM. No ejecutes
+  consultas directas desprotegidas ni uses phpMyAdmin como sustituto de
+  migraciones versionadas.
+- Queda prohibido el uso de tipos de datos o columnas JSON para persistir
+  información de negocio. Toda entidad (daños, pagos, vehículos, marcas,
+  modelos y clientes) debe estar normalizada en columnas atómicas y tablas
+  relacionales.
+- Los catálogos de marcas y modelos provienen directamente de la base de datos
+  mediante las tablas `marca` y `modelo`. En el formulario de ingreso, el
+  selector de modelos debe ser dependiente en cascada del selector de marca.
+- La capacidad de las filas se administra por volumen total y no por cajones
+  numerados. Una fila con `estado = 0` (ocupada) debe ser bloqueada por el
+  backend mediante transacciones con bloqueo pesimista (`lockForUpdate()`) para
+  evitar condiciones de carrera y sobrecupos entre operadores.
+- Las tarifas de los servicios extra provienen de la base de datos o parámetros
+  configurables y están sujetas a modificaciones; no deben quedar quemadas de
+  forma rígida en controladores o vistas.
+- Lee los archivos relacionados antes de editarlos. Conserva las convenciones de
+  nombres y mantén la consistencia entre los atributos de la base de datos y las
+  interfaces de TypeScript del frontend.
 
-## 2. Reglas del Modelo de Datos (Esquema Relacional Estricto)
+## Seguridad y datos
 
-Queda **estrictamente prohibido el uso de campos JSON** para almacenar información del negocio. Todo dato debe persistir en columnas atómicas y tablas normalizadas mediante migraciones de Laravel.
+- Nunca expongas, copies a la documentación ni confirmes credenciales. Mantén
+  secretos en el archivo `.env` y fuera del control de versiones.
+- Usa consultas preparadas y el ORM para prevenir inyección SQL. Valida y
+  sanitiza las entradas tanto en el cliente como en el servidor.
+- Encripta siempre las contraseñas de los usuarios mediante el algoritmo de hash
+  nativo de Laravel (`Hash::make()`).
+- No muestres trazas de error interno, credenciales ni consultas SQL en las
+  respuestas JSON de la API.
+- Todo cambio en el esquema de base de datos debe respaldarse mediante una
+  migración de Laravel con métodos `up()` y `down()` reversibles. Conserva los
+  datos locales y documenta cómo aplicar o revertir el cambio.
+- Las imágenes de diagramas de inspección vehicular deben guardarse en el disco
+  local (`storage/app/public`) y almacenar únicamente su ruta relativa en la base
+  de datos; nunca almacenes binarios BLOB en tablas.
 
-### Estructura de Tablas:
-1. **`rol`**: `idRol` (PK), `rol`.
-2. **`usuario`**: `idUsuario` (PK), `idRol` (FK), `rut`, `nombres`, `apellidoPaterno`, `apellidoMaterno`, `correo`, `contrasena`.
-3. **`cliente`**: `idCliente` (PK), `rut`, `nombres`, `apellidoPaterno`, `apellidoMaterno`, `telefono`, `correo`.
-4. **`marca`**: `idMarca` (PK), `marca`.
-5. **`modelo`**: `idModelo` (PK), `idMarca` (FK), `modelo`.
-6. **`vehiculo`**: `idVehiculo` (PK), `patente`, `anio`, `color`, `idModelo` (FK).
-7. **`fila`**: `idFila` (PK), `fila`, `capacidadTotal`, `estado`. *(Nota: Los cupos no se numeran individualmente; se asignan por capacidad de fila, ej. Fila A: 16 cupos).*
-8. **`servicioextra`**: `idServicioExtra` (PK), `servicioExtra`.
-9. **`ingreso`**: `idIngreso` (PK), `idServicioExtra` (FK nullable), `idUsuario` (FK), `idVehiculo` (FK), `idFilaEstacionamiento` (FK -> `fila.idFila`), `idCliente` (FK), `fechaInicio` (date), `horaInicio` (time), `fechaTermino` (date nullable), `horaTermino` (time nullable), `numeroVuelo` (varchar nullable), `llaves` (boolean), `observacion` (text nullable).
-10. **`danio_vehiculo`**: `idDanio` (PK), `idIngreso` (FK), `coordX` (decimal(5,2)), `coordY` (decimal(5,2)), `tipoDanio` (varchar), `detalle` (varchar nullable).
-11. **`pago`**: `idPago` (PK), `idIngreso` (FK), `montoTotal` (int), `metodoPago` (varchar), `fechaHoraPago` (datetime).
+## Interfaz, React y Tailwind CSS
 
----
+- El diseño debe ser responsivo y táctil, preparado para pantallas de tablets
+  (mínimo 44px de área de contacto en botones y selectores) y monitores de PC.
+- Implementa el módulo de inspección gráfica de daños mediante un canvas o
+  esquema vectorial del vehículo que capture coordenadas relativas en porcentaje
+  (`coordX`, `coordY`) para registrar múltiples daños normalizados en
+  `danio_vehiculo`.
+- En el área de inspección táctil en tablets, aplica la propiedad CSS
+  `touch-action: none` para impedir el scroll o zoom accidental mientras se
+  marcan daños.
+- Las tres vistas principales deben respetar el control de acceso basado en
+  roles:
+  - Operador: registro ágil de ingresos con vuelo, llaves, selección de fila,
+    marcas de daños y catálogos dependientes de marca/modelo.
+  - Jefatura: dashboard de solo lectura con recaudación acumulada estimada,
+    ocupación de filas en vivo y monitoreo de vuelos.
+  - Administrador: gestión de usuarios, roles y configuración de capacidad
+    de filas.
+- Protege las rutas en el frontend mediante un componente de React Router que
+  compruebe el token de Sanctum y el rol asignado.
 
-## 3. Módulos y Control de Acceso (RBAC)
+## Verificación
 
-El sistema opera con tres perfiles delimitados mediante middlewares en Laravel y rutas protegidas en React Router:
-
-1. **Operador (Optimizado para Tablet táctil):**
-   - Registro ágil de entrada/salida de vehículos y clientes.
-   - Selector visual de filas con barras de ocupación en tiempo real (`ocupados / capacidadTotal`).
-   - Módulo de inspección gráfica sobre silueta vehicular: captura toques táctiles, calcula coordenadas relativas en porcentaje (`coordX`, `coordY`) y las asocia a `danio_vehiculo`.
-2. **Jefatura (Dashboard de Supervisión - Solo Lectura):**
-   - Monitoreo en vivo de capacidad y porcentaje de ocupación por fila.
-   - Métrica en tiempo real de recaudación total diaria basada en la tabla `pago`.
-   - Bloqueo total de acciones de edición o eliminación de registros.
-3. **Administrador:**
-   - CRUD integral de usuarios y asignación de roles.
-   - Configuración de filas: alta, baja lógica y ajuste de capacidades máximas.
-
----
-
-## 4. Reglas de Desarrollo Backend (Laravel & PHP)
-
-- Escribe código compatible con **PHP 8.2+** utilizando tipado estricto, Form Requests para validación y Resources para la respuesta de la API.
-- **Control de Concurrencia Obligatorio:** En la asignación de filas, nunca asumas disponibilidad con un simple conteo. Implementa transacciones con bloqueo pesimista (`DB::transaction` y `lockForUpdate()`) para impedir sobrecupo si dos operadores asignan en simultáneo:
-  ```php
-  $fila = Fila::where('idFila',$filaId)->lockForUpdate()->first();
+- Usa el entorno local de Apache y MySQL de XAMPP junto con el servidor de Vite
+  para validar el funcionamiento entre backend y frontend.
+- Ejecuta las comprobaciones pertinentes y verifica manualmente las rutas y
+  endpoints afectados antes de dar por cerrada una tarea.
+- No ejecutes migraciones destructivas (`migrate:fresh`) ni elimines datos de
+  prueba locales sin previa confirmación.
+- Actualiza `README.md` cuando cambien variables de entorno, dependencias de
+  Composer o dependencias de npm.

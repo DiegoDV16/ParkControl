@@ -1,8 +1,26 @@
 # ParkControl
 
-Sistema de control de estacionamiento desarrollado en **PHP 8.2 clásico con
-arquitectura MVC**, **MySQL/MariaDB** y **Bootstrap 5.3**. La interfaz está en
-español y usa los estilos propios `pc-` del proyecto.
+Sistema de control de estacionamiento de larga estadía (viajes y custodia de
+vehículos). El proyecto migra por fases hacia una arquitectura desacoplada:
+
+- **API REST:** Laravel 12 + Sanctum en [`backend/`](backend/).
+- **SPA:** React + Vite + TypeScript + Tailwind CSS en [`frontend/`](frontend/).
+- **Versión clásica:** la aplicación PHP MVC anterior en `app/` se conserva
+  como referencia hasta completar la migración.
+
+La interfaz está en español.
+
+## Fase 1 (actual)
+
+| Parte | Ruta | Ejecución |
+|---|---|---|
+| API | `backend/` | `php backend/artisan serve --host=127.0.0.1 --port=8000` |
+| SPA | `frontend/` | `npm run dev` (5173) o `npm run build` + `npm run preview` (4173) |
+
+Endpoints de autenticación: `POST /api/login`, `GET /api/user`,
+`POST /api/logout` con token Bearer de Sanctum. Los usuarios se validan contra
+la tabla `usuario` existente y los roles del sistema (`Administrador`,
+`Operador`, `Jefatura`).
 
 ---
 
@@ -15,7 +33,7 @@ español y usa los estilos propios `pc-` del proyecto.
 | Apache | XAMPP (mod_rewrite no es necesario) |
 | Navegador | Cualquiera moderno |
 
-No requiere Composer ni Laravel.
+Requiere PHP 8.2+, Composer, Node.js 20+ y MySQL/MariaDB de XAMPP.
 
 ---
 

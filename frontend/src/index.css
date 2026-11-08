@@ -1,0 +1,67 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  @apply bg-pc-bg text-pc-text antialiased;
+  background-image: radial-gradient(circle at 15% 0%, rgba(62, 224, 161, 0.08), transparent 45%),
+    radial-gradient(circle at 90% 10%, rgba(20, 90, 140, 0.25), transparent 55%);
+  background-attachment: fixed;
+}
+
+::selection {
+  background: #3ee0a1;
+  color: #04121d;
+}
+
+@layer components {
+  .pc-card {
+    @apply rounded-xl border border-pc-border bg-pc-panel/80 shadow-glow;
+  }
+
+  .pc-label {
+    @apply mb-2 block text-[11px] font-semibold uppercase tracking-[0.14em] text-pc-muted;
+  }
+
+  .pc-input {
+    @apply w-full rounded-lg border border-pc-border bg-pc-panel2 px-4 py-3 text-sm text-pc-text outline-none transition placeholder:text-pc-muted/60 focus:border-pc-mint focus:ring-2 focus:ring-pc-mint/25;
+  }
+
+  .pc-btn {
+    @apply inline-flex min-h-[44px] items-center justify-center gap-2 rounded-lg px-4 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-60;
+  }
+
+  .pc-btn-primary {
+    @apply inline-flex min-h-[44px] items-center justify-center gap-2 rounded-lg bg-pc-mint px-4 text-sm font-bold text-[#04121d] transition hover:bg-pc-mint2 disabled:cursor-not-allowed disabled:opacity-60;
+  }
+
+  .pc-btn-ghost {
+    @apply inline-flex min-h-[44px] items-center justify-center gap-2 rounded-lg border border-pc-border px-4 text-sm font-semibold text-pc-text transition hover:border-pc-mint/60 hover:text-pc-mint disabled:cursor-not-allowed disabled:opacity-60;
+  }
+}
+
+/* Barra de desplazamiento discreta */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #1b4460 transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: #1b4460;
+  border-radius: 999px;
+}
