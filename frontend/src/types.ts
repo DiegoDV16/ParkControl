@@ -118,6 +118,20 @@ export interface IngresoPayload {
   observacion?: string | null
 }
 
+export interface PreviewCobro {
+  minutos: number
+  dias: number
+  monto: number
+}
+
+export interface CobroPayload {
+  fechaRegreso: string
+  horaRegreso: string
+  metodo: 'efectivo' | 'debito' | 'credito' | 'transferencia'
+  montoRecibido?: number | null
+  referencia?: string | null
+}
+
 export interface UsuarioPayload {
   idRol: number
   rut: string

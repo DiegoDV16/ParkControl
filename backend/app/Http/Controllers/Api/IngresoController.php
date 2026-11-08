@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\CobrarIngresoRequest;
 use App\Http\Requests\StoreIngresoRequest;
 use App\Http\Resources\IngresoResource;
 use App\Models\Cliente;
@@ -149,6 +150,134 @@ class IngresoController extends Controller
         return (new IngresoResource($ingreso))
             ->response()
             ->setStatusCode(201);
+    }
+
+    /**
+     * Previsualiza días y monto para una llegada determinada.
+     */
+    public function preview(Request $request, Ingreso $ingreso): JsonResponse
+    {
+        $datos = $request->validate([
+            'fechaRegreso' => ['required', 'date'],
+            'horaRegreso' => ['required', 'date_format:H:i'],
+        ]);
+
+        [$minutos, $dias, $monto] = $this->calcularCobro(
+            $ingreso,
+            $datos['fechaRegreso'],
+            $datos['horaRegreso'],
+        );
+
+        return response()->json([
+            'minutos' => $minutos,
+            'dias' => $dias,
+            'monto' => $monto,
+        ]);
+    }
+
+    /**
+     * Registra la llegada real, el pago y libera la fila.
+     */
+    public function cobrar(CobrarIngresoRequest $request, Ingreso $ingreso): JsonResponse
+    {
+        if ($ingreso->estado !== 'abierto') {
+            return response()->json(['message' => 'El ingreso ya fue cerrado o anulado.'], 422);
+        }
+
+        $datos = $request->validated();
+
+        $resultado = DB::transaction(function () use ($ingreso, $datos, $request): array {
+            $bloqueado = Ingreso::whereKey($ingreso->idIngreso)->lockForUpdate()->firstOrFail();
+
+            if ($bloqueado->estado !== 'abierto') {
+                throw ValidationException::withMessages(['ingreso' => 'El ingreso ya fue cerrado.']);
+            }
+
+            [$minutos, $dias, $monto] = $this->calcularCobro(
+                $bloqueado,
+                $datos['fechaRegreso'],
+                $datos['horaRegreso'],
+            );
+
+            $vuelto = null;
+
+            if ($datos['metodo'] === 'efectivo' && isset($datos['montoRecibido'])) {
+                $recibido = (float) $datos['montoRecibido'];
+
+                if ($recibido < $monto) {
+                    throw ValidationException::withMessages([
+                        'montoRecibido' => 'El monto recibido es menor al total a pagar.',
+                    ]);
+                }
+
+                $vuelto = round($recibido - $monto, 2);
+            }
+
+            $fin = Carbon::parse($datos['fechaRegreso'].' '.$datos['horaRegreso']);
+
+            $bloqueado->fechaRegreso = $datos['fechaRegreso'];
+            $bloqueado->horaRegreso = $datos['horaRegreso'];
+            $bloqueado->fechaTermino = $datos['fechaRegreso'];
+            $bloqueado->horaTermino = $fin->format('Y-m-d H:i:s');
+            $bloqueado->montoTotal = $monto;
+            $bloqueado->estado = 'cerrado';
+            $bloqueado->save();
+
+            DB::table('pago')->insert([
+                'idIngreso' => $bloqueado->idIngreso,
+                'idUsuario' => $request->user()->idUsuario,
+                'metodo' => $datos['metodo'],
+                'monto' => $monto,
+                'vuelto' => $vuelto,
+                'referencia' => $datos['referencia'] ?? null,
+                'fechaPago' => now(),
+            ]);
+
+            return [$bloqueado, $minutos, $dias, $monto, $vuelto];
+        });
+
+        [$cerrado, $minutos, $dias, $monto, $vuelto] = $resultado;
+
+        $cerrado->load(['cliente', 'vehiculo.modelo.marca', 'vehiculo.tipo', 'fila', 'servicio']);
+
+        return response()->json([
+            'data' => new IngresoResource($cerrado),
+            'pago' => [
+                'monto' => $monto,
+                'vuelto' => $vuelto,
+                'metodo' => $datos['metodo'],
+            ],
+            'minutos' => $minutos,
+            'dias' => $dias,
+            'message' => 'Cobro registrado correctamente.',
+        ]);
+    }
+
+    /**
+     * @return array{0: int, 1: int, 2: float}
+     */
+    private function calcularCobro(Ingreso $ingreso, string $fecha, string $hora): array
+    {
+        $ingreso->loadMissing(['vehiculo.tipo', 'servicio']);
+
+        $inicio = Carbon::parse($ingreso->fechaInicio.' '.$ingreso->horaInicio);
+        $fin = Carbon::parse($fecha.' '.$hora);
+
+        if ($fin->lt($inicio)) {
+            throw ValidationException::withMessages([
+                'fechaRegreso' => 'La llegada no puede ser anterior al ingreso.',
+            ]);
+        }
+
+        $minutos = max(1, (int) ceil($inicio->diffInMinutes($fin, true)));
+        $dias = TarifaService::diasCobrables($minutos);
+        $monto = TarifaService::total(
+            $minutos,
+            $ingreso->vehiculo?->tipo?->tipoVehiculo,
+            $ingreso->servicio?->servicioExtra,
+        );
+
+        return [$minutos, $dias, $monto];
     }
 
     public function show(Ingreso $ingreso): JsonResponse

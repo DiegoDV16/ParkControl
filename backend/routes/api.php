@@ -27,11 +27,13 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::get('/catalogos', [CatalogoController::class, 'index']);
     Route::get('/ingresos', [IngresoController::class, 'index']);
     Route::get('/ingresos/estimar', [IngresoController::class, 'estimar']);
+    Route::get('/ingresos/{ingreso}/preview', [IngresoController::class, 'preview']);
     Route::get('/ingresos/{ingreso}', [IngresoController::class, 'show']);
 });
 
 Route::middleware(['auth:sanctum', 'role:ADMINISTRADOR,OPERADOR'])->group(function (): void {
     Route::post('/ingresos', [IngresoController::class, 'store']);
+    Route::post('/ingresos/{ingreso}/cobrar', [IngresoController::class, 'cobrar']);
 });
 
 Route::middleware(['auth:sanctum', 'role:ADMINISTRADOR'])->group(function (): void {

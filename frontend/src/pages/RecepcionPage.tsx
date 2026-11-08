@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import { useAuth } from '../auth/AuthContext'
+import { CobroModal } from '../components/CobroModal'
 import {
   ApiError,
   crearIngreso,
@@ -76,6 +77,7 @@ export function RecepcionPage() {
   const [enviando, setEnviando] = useState(false)
   const [form, setForm] = useState(formularioInicial())
   const [estimacion, setEstimacion] = useState<{ dias: number; monto: number } | null>(null)
+  const [cobro, setCobro] = useState<IngresoResumen | null>(null)
 
   const cargar = useCallback(async () => {
     setCargando(true)
@@ -448,7 +450,16 @@ export function RecepcionPage() {
                   <td className="px-4 py-3 text-xs">{ingreso.servicio ?? 'Sin servicio'}</td>
                   <td className="px-4 py-3">{ingreso.dias}</td>
                   <td className="px-4 py-3 text-right font-semibold">
-                    ${ingreso.montoProyectado.toLocaleString('es-CL')}
+                    <div>${ingreso.montoProyectado.toLocaleString('es-CL')}</div>
+                    {!esJefatura && (
+                      <button
+                        type="button"
+                        className="pc-btn-ghost mt-1 px-2 text-xs"
+                        onClick={() => setCobro(ingreso)}
+                      >
+                        Cobrar
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -458,8 +469,20 @@ export function RecepcionPage() {
       </section>
 
       <p className="text-xs text-pc-muted">
-        La salida y el cobro se implementan en la siguiente fase. La inspección de daños en canvas queda pendiente.
+        El cobro registra la llegada real y libera la fila. La inspección de daños en canvas queda pendiente.
       </p>
+
+      {cobro && (
+        <CobroModal
+          ingreso={cobro}
+          onCerrar={() => setCobro(null)}
+          onCobrado={(mensaje) => {
+            setCobro(null)
+            setOk(mensaje)
+            void cargar()
+          }}
+        />
+      )}
     </div>
   )
 }

@@ -15,8 +15,11 @@ class IngresoResource extends JsonResource
     public function toArray(Request $request): array
     {
         $inicio = Carbon::parse($this->fechaInicio.' '.$this->horaInicio);
+        $horaTermino = (string) $this->horaTermino;
         $fin = $this->fechaTermino
-            ? Carbon::parse($this->fechaTermino.' '.$this->horaTermino)
+            ? (strlen($horaTermino) > 8
+                ? Carbon::parse($horaTermino)
+                : Carbon::parse($this->fechaTermino.' '.$horaTermino))
             : ($this->fechaRegreso
                 ? Carbon::parse($this->fechaRegreso.' '.($this->horaRegreso ?? '00:00'))
                 : now());
@@ -28,7 +31,9 @@ class IngresoResource extends JsonResource
         $servicioNombre = $this->servicio?->servicioExtra;
         $monto = $this->estado === 'anulado'
             ? 0
-            : TarifaService::total($minutos, $tipo, $servicioNombre);
+            : ($this->estado === 'cerrado' && $this->montoTotal !== null
+                ? (float) $this->montoTotal
+                : TarifaService::total($minutos, $tipo, $servicioNombre));
 
         return [
             'idIngreso' => (int) $this->idIngreso,
