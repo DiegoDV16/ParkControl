@@ -177,19 +177,19 @@ export const InspeccionVehicular = forwardRef<InspeccionHandle, Props>(
 
     function tarjeta(config: ConfigVista) {
       return (
-        <div key={config.vista} className={`rounded-xl border border-slate-300 bg-white p-2 ${config.vista === 'superior' ? 'mx-auto w-full max-w-[200px]' : ''}`}>
-          <div className="mb-1 flex items-center justify-between gap-2">
-            <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-600">
+        <div key={config.vista} className={`rounded-xl border border-slate-300 bg-slate-200 p-2 ${config.vista === 'superior' ? 'mx-auto w-full max-w-[250px]' : ''}`}>
+          <div className="mb-1 flex flex-wrap items-center justify-between gap-1">
+            <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-700">
               {config.etiqueta}
             </span>
             <div className="flex gap-1">
-              <button type="button" title="Deshacer" disabled={bloqueado}
-                className="h-6 w-7 rounded border border-slate-300 text-xs text-slate-600 disabled:opacity-40"
+              <button type="button" disabled={bloqueado}
+                className="flex h-6 items-center gap-1 rounded-md bg-slate-800 px-1.5 text-[9px] font-semibold text-white disabled:opacity-40"
                 onClick={() => lienzos.current[config.vista]?.deshacer()}>
-                ↶
+                ↶ Deshacer
               </button>
               <button type="button" disabled={bloqueado}
-                className="h-6 rounded border border-slate-300 px-1.5 text-[10px] text-slate-600 disabled:opacity-40"
+                className="h-6 rounded-md border border-slate-400 px-1.5 text-[9px] font-semibold text-slate-700 disabled:opacity-40"
                 onClick={() => lienzos.current[config.vista]?.limpiar()}>
                 Limpiar
               </button>
@@ -214,8 +214,8 @@ export const InspeccionVehicular = forwardRef<InspeccionHandle, Props>(
 
     return (
       <div className={`space-y-3 ${className}`}>
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-300 bg-white px-3 py-2">
-          <label className="flex min-h-[40px] cursor-pointer items-center gap-2 text-sm text-slate-700">
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-700 bg-slate-800 px-3 py-2">
+          <label className="flex min-h-[40px] cursor-pointer items-center gap-2 text-sm text-slate-200">
             <input type="checkbox" checked={sinDanios}
               onChange={(evento) => setSinDanios(evento.target.checked)} />
             Sin daños visibles
@@ -224,18 +224,22 @@ export const InspeccionVehicular = forwardRef<InspeccionHandle, Props>(
           <div className="flex items-center gap-2">
             {COLORES.map((item) => (
               <button key={item.valor} type="button" title={item.nombre}
-                className={`h-8 w-8 rounded-full border-2 ${color === item.valor ? 'border-slate-700' : 'border-transparent'}`}
+                className={`h-8 w-8 rounded-full border-2 ${color === item.valor ? 'border-white' : 'border-transparent'}`}
                 style={{ backgroundColor: item.valor }}
                 onClick={() => setColor(item.valor)}
                 aria-label={item.nombre} />
             ))}
-            <button type="button" className="pc-btn-ghost px-2 text-xs" onClick={limpiarTodo} disabled={bloqueado}>
+            <button type="button" disabled={bloqueado}
+              className="rounded-lg border border-slate-600 px-3 py-2 text-xs font-semibold text-slate-200 hover:bg-slate-700 disabled:opacity-40"
+              onClick={limpiarTodo}>
               Limpiar todo
             </button>
           </div>
 
           {onGuardar && (
-            <button type="button" className="pc-btn-primary" onClick={() => void guardar()}
+            <button type="button"
+              className="rounded-lg bg-emerald-400 px-4 py-2 text-sm font-bold text-emerald-950 hover:bg-emerald-300 disabled:opacity-60"
+              onClick={() => void guardar()}
               disabled={guardando || deshabilitado}>
               {guardando ? 'Guardando…' : 'Guardar inspección'}
             </button>
@@ -255,8 +259,8 @@ export const InspeccionVehicular = forwardRef<InspeccionHandle, Props>(
           {tarjeta(VISTAS[3])}
           {tarjeta(VISTAS[4])}
 
-          <div className="rounded-xl border border-slate-300 bg-white p-3 text-xs text-slate-600">
-            <p className="text-sm font-bold text-slate-700">Inspección vehicular</p>
+          <div className="rounded-xl border border-slate-700 bg-slate-800 p-3 text-xs text-slate-300">
+            <p className="text-sm font-bold text-white">Inspección vehicular</p>
             <p className="mt-2">Dibuja con el dedo o lápiz sobre cada vista.</p>
             <p className="mt-1">Rojo: daño o golpe fuerte.</p>
             <p className="mt-1">Amarillo: rayón leve.</p>
