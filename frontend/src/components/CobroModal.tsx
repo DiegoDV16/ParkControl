@@ -25,8 +25,7 @@ export function CobroModal({ ingreso, onCerrar, onCobrado }: Props) {
   const [hora, setHora] = useState(
     (ingreso.horaRegreso ?? new Date().toTimeString().slice(0, 5)).slice(0, 5),
   )
-  const [metodo, setMetodo] = useState<CobroPayload['metodo']>('efectivo')
-  const [recibido, setRecibido] = useState('')
+  const [metodo, setMetodo] = useState<CobroPayload['metodo']>('debito')
   const [referencia, setReferencia] = useState('')
 
   const [preview, setPreview] = useState<PreviewCobro | null>(null)
@@ -46,10 +45,6 @@ export function CobroModal({ ingreso, onCerrar, onCobrado }: Props) {
     return () => window.clearTimeout(temporizador)
   }, [ingreso.idIngreso, fecha, hora])
 
-  const vuelto = metodo === 'efectivo' && preview !== null && recibido !== ''
-    ? Number(recibido) - preview.monto
-    : null
-
   async function enviar(evento: FormEvent<HTMLFormElement>) {
     evento.preventDefault()
     if (!preview) return
@@ -62,7 +57,6 @@ export function CobroModal({ ingreso, onCerrar, onCobrado }: Props) {
         fechaRegreso: fecha,
         horaRegreso: hora,
         metodo,
-        montoRecibido: metodo === 'efectivo' && recibido !== '' ? Number(recibido) : null,
         referencia: referencia.trim() || null,
       })
       onCobrado(respuesta.message)
@@ -129,49 +123,24 @@ export function CobroModal({ ingreso, onCerrar, onCobrado }: Props) {
           <label htmlFor="cMetodo" className="pc-label">Método de pago *</label>
           <select id="cMetodo" className="pc-input" value={metodo}
             onChange={(evento) => setMetodo(evento.target.value as CobroPayload['metodo'])}>
-            <option value="efectivo">Efectivo</option>
             <option value="debito">Débito</option>
             <option value="credito">Crédito</option>
             <option value="transferencia">Transferencia</option>
           </select>
         </div>
 
-        {metodo === 'efectivo' ? (
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div>
-              <label htmlFor="cRecibido" className="pc-label">Monto recibido</label>
-              <input id="cRecibido" type="number" min={0} className="pc-input" value={recibido}
-                onChange={(evento) => setRecibido(evento.target.value)} placeholder="Opcional" />
-            </div>
-            <div>
-              <span className="pc-label">Vuelto</span>
-              <p className={`pc-input ${vuelto !== null && vuelto < 0 ? 'text-pc-danger' : ''}`}>
-                {vuelto !== null ? `$${vuelto.toLocaleString('es-CL')}` : '—'}
-              </p>
-            </div>
-          </div>
-        ) : (
-          <div>
-            <label htmlFor="cReferencia" className="pc-label">Referencia</label>
-            <input id="cReferencia" className="pc-input" maxLength={50} value={referencia}
-              onChange={(evento) => setReferencia(evento.target.value)}
-              placeholder="N° operación / comprobante" />
-          </div>
-        )}
-
-        {vuelto !== null && vuelto < 0 && (
-          <p className="text-sm text-pc-danger">El monto recibido es menor al total a pagar.</p>
-        )}
+        <div>
+          <label htmlFor="cReferencia" className="pc-label">Referencia</label>
+          <input id="cReferencia" className="pc-input" maxLength={50} value={referencia}
+            onChange={(evento) => setReferencia(evento.target.value)}
+            placeholder="N° operación / comprobante" />
+        </div>
 
         <div className="flex justify-end gap-2 border-t border-pc-border pt-4">
           <button type="button" className="pc-btn-ghost" onClick={onCerrar} disabled={guardando}>
             Cancelar
           </button>
-          <button
-            type="submit"
-            className="pc-btn-primary"
-            disabled={guardando || !preview || (vuelto !== null && vuelto < 0)}
-          >
+          <button type="submit" className="pc-btn-primary" disabled={guardando || !preview}>
             {guardando ? 'Cobrando…' : 'Confirmar cobro'}
           </button>
         </div>

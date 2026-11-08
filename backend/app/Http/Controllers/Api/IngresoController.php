@@ -201,18 +201,6 @@ class IngresoController extends Controller
 
             $vuelto = null;
 
-            if ($datos['metodo'] === 'efectivo' && isset($datos['montoRecibido'])) {
-                $recibido = (float) $datos['montoRecibido'];
-
-                if ($recibido < $monto) {
-                    throw ValidationException::withMessages([
-                        'montoRecibido' => 'El monto recibido es menor al total a pagar.',
-                    ]);
-                }
-
-                $vuelto = round($recibido - $monto, 2);
-            }
-
             $fin = Carbon::parse($datos['fechaRegreso'].' '.$datos['horaRegreso']);
 
             $bloqueado->fechaRegreso = $datos['fechaRegreso'];
