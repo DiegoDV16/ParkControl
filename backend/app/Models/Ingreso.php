@@ -21,6 +21,11 @@ class Ingreso extends Model
         return $this->hasMany(DanioVehiculo::class, 'idIngreso', 'idIngreso');
     }
 
+    public function fotos(): HasMany
+    {
+        return $this->hasMany(InspeccionFoto::class, 'idIngreso', 'idIngreso');
+    }
+
     public function cliente(): BelongsTo
     {
         return $this->belongsTo(Cliente::class, 'idCliente', 'idCliente');

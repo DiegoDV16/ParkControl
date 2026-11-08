@@ -81,6 +81,10 @@ class IngresoResource extends JsonResource
                 ? $request->getSchemeAndHttpHost().'/storage/'.$this->inspeccionRuta
                 : null,
             'inspeccionSinDanios' => (bool) $this->inspeccionSinDanios,
+            'inspeccionFotos' => $this->whenLoaded('fotos', fn () => $this->fotos->map(fn ($foto) => [
+                'idFoto' => (int) $foto->idFoto,
+                'url' => $request->getSchemeAndHttpHost().'/storage/'.$foto->ruta,
+            ])->values()),
         ];
     }
 }

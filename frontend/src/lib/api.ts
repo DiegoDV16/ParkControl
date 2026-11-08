@@ -3,6 +3,7 @@ import type {
   CobroPayload,
   Danio,
   Fila,
+  FotoInspeccion,
   IngresoPayload,
   IngresoResumen,
   LoginResponse,
@@ -289,6 +290,49 @@ export async function subirInspeccion(
     url: datos.url ?? '',
     ruta: datos.ruta ?? '',
   }
+}
+
+export async function subirFotoInspeccion(
+  idIngreso: number,
+  imagen: File,
+): Promise<{ data: FotoInspeccion }> {
+  const formulario = new FormData()
+  formulario.append('imagen', imagen, imagen.name || 'foto.jpg')
+
+  const cabeceras: Record<string, string> = { Accept: 'application/json' }
+  const token = getToken()
+  if (token) cabeceras.Authorization = `Bearer ${token}`
+
+  let respuesta: Response
+  try {
+    respuesta = await fetch(`${API_URL}/ingresos/${idIngreso}/fotos`, {
+      method: 'POST',
+      headers: cabeceras,
+      body: formulario,
+    })
+  } catch {
+    throw new ApiError(0, 'No se pudo conectar con el servidor.')
+  }
+
+  const texto = await respuesta.text()
+  let datos: { message?: string; data?: FotoInspeccion } = {}
+  if (texto) {
+    try {
+      datos = JSON.parse(texto) as typeof datos
+    } catch {
+      datos = {}
+    }
+  }
+
+  if (!respuesta.ok || !datos.data) {
+    throw new ApiError(respuesta.status, datos.message ?? 'No se pudo subir la fotografía.')
+  }
+
+  return { data: datos.data }
+}
+
+export function eliminarFotoInspeccion(idFoto: number): Promise<{ message: string }> {
+  return request<{ message: string }>(`/inspeccion-fotos/${idFoto}`, { method: 'DELETE' })
 }
 
 export function eliminarUsuario(id: number, forzar = false): Promise<{ message: string }> {
