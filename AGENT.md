@@ -5,77 +5,96 @@ desarrolle o mantenga este proyecto.
 
 ## Contexto del proyecto
 
-- ParkControl es un sistema de control de estacionamiento con interfaz y textos
-  en español.
-- El código actual está organizado como una aplicación PHP MVC clásica bajo
-  `app/`, con vistas en `app/views/`, recursos en `app/assets/` y conexión PDO
-  en `app/config/conexion.php`.
-- La base de datos prevista es MySQL, ejecutada localmente con XAMPP y
-  administrada con phpMyAdmin.
-- La documentación actual describe PHP clásico, no una aplicación Laravel.
-  Antes de usar Artisan, migraciones, Eloquent o componentes Laravel, verifica
-  que Composer y Laravel estén instalados. No presentes esos comandos como
-  disponibles si no lo están.
+- ParkControl es un sistema de control de estacionamiento de larga estadía
+  (asociado a viajes y custodia de vehículos) con interfaz y textos
+  exclusivamente en español.
+- La arquitectura del proyecto es un monolito desacoplado:
+  - Backend: API REST construida en PHP 8.2 o superior con Laravel y
+    autenticación de tokens vía Laravel Sanctum.
+  - Frontend: Single Page Application (SPA) responsiva desarrollada en React
+    con Vite, TypeScript, React Router y Tailwind CSS, optimizada para PC y
+    tablets táctiles en garita.
+  - Base de datos: MySQL / MariaDB ejecutada localmente con XAMPP y
+    administrada mediante phpMyAdmin.
+- No se manejan cajas de cobro tradicionales ni aperturas/cierres de turno en
+  tiempo real. Los cobros corresponden a liquidaciones y estimaciones calculadas
+  por tramos de días y servicios adicionales al generar reportes o liquidar la
+  salida.
 
 ## Reglas de desarrollo
 
-- Escribe código compatible con PHP 8.2 o superior. Usa sintaxis moderna con
-  tipos cuando aporte claridad y comprueba la versión instalada antes de
-  ejecutar validaciones.
-- Respeta la estructura MVC y los patrones existentes. No migres el proyecto a
-  Laravel ni cambies su arquitectura sin una solicitud explícita.
-- Si se solicita desarrollar o migrar a Laravel, usa las convenciones del
-  framework: rutas, controladores, modelos, validación, middleware, Blade,
-  configuración por entorno y migraciones. Explica los cambios de estructura y
-  dependencias necesarios.
-- Accede a MySQL desde la aplicación mediante PDO o, si Laravel ya está
-  instalado, mediante sus componentes de base de datos. phpMyAdmin es una
-  herramienta administrativa; no lo uses como sustituto de validaciones,
-  consultas parametrizadas o migraciones versionadas.
-- Mantén textos, mensajes de interfaz y documentación para usuarios en español.
-- Conserva Bootstrap y los estilos propios `pc-` existentes, salvo que la tarea
-  pida un cambio de diseño.
-- Lee los archivos relacionados antes de editarlos. Evita cambios no
-  relacionados y conserva las convenciones de nombres y el comportamiento
-  existente.
+- Escribe código compatible con PHP 8.2 o superior en el backend. Aplica tipos
+  estrictos, Form Requests para validación de entradas, API Resources para
+  respuestas estructuradas y middlewares de rol.
+- Respeta la estructura de API REST y no mezcles vistas Blade tradicionales con
+  la interfaz de React.
+- Accede a MySQL a través de migraciones y modelos de Eloquent ORM. No ejecutes
+  consultas directas desprotegidas ni uses phpMyAdmin como sustituto de
+  migraciones versionadas.
+- Queda prohibido el uso de tipos de datos o columnas JSON para persistir
+  información de negocio. Toda entidad (daños, pagos, vehículos, marcas,
+  modelos y clientes) debe estar normalizada en columnas atómicas y tablas
+  relacionales.
+- Los catálogos de marcas y modelos provienen directamente de la base de datos
+  mediante las tablas `marca` y `modelo`. En el formulario de ingreso, el
+  selector de modelos debe ser dependiente en cascada del selector de marca.
+- La capacidad de las filas se administra por volumen total y no por cajones
+  numerados. Una fila con `estado = 0` (ocupada) debe ser bloqueada por el
+  backend mediante transacciones con bloqueo pesimista (`lockForUpdate()`) para
+  evitar condiciones de carrera y sobrecupos entre operadores.
+- Las tarifas de los servicios extra provienen de la base de datos o parámetros
+  configurables y están sujetas a modificaciones; no deben quedar quemadas de
+  forma rígida en controladores o vistas.
+- Lee los archivos relacionados antes de editarlos. Conserva las convenciones de
+  nombres y mantén la consistencia entre los atributos de la base de datos y las
+  interfaces de TypeScript del frontend.
 
 ## Seguridad y datos
 
-- Nunca expongas, copies a la documentación ni confirmes credenciales.
-  Mantén secretos fuera del repositorio y usa configuración local o variables
-  de entorno según el patrón disponible.
-- Usa consultas preparadas; valida y normaliza entradas del usuario.
-- Escapa datos al renderizarlos en HTML y usa las protecciones CSRF y de sesión
-  apropiadas para el flujo existente o para Laravel.
-- No muestres errores internos, consultas SQL ni credenciales al usuario.
-- Para cambios en el esquema MySQL, conserva los datos y documenta la forma de
-  aplicar y revertir el cambio. Si Laravel está instalado, crea migraciones;
-  en caso contrario, proporciona SQL explícito y seguro para el entorno local.
+- Nunca expongas, copies a la documentación ni confirmes credenciales. Mantén
+  secretos en el archivo `.env` y fuera del control de versiones.
+- Usa consultas preparadas y el ORM para prevenir inyección SQL. Valida y
+  sanitiza las entradas tanto en el cliente como en el servidor.
+- Encripta siempre las contraseñas de los usuarios mediante el algoritmo de hash
+  nativo de Laravel (`Hash::make()`).
+- No muestres trazas de error interno, credenciales ni consultas SQL en las
+  respuestas JSON de la API.
+- Todo cambio en el esquema de base de datos debe respaldarse mediante una
+  migración de Laravel con métodos `up()` y `down()` reversibles. Conserva los
+  datos locales y documenta cómo aplicar o revertir el cambio.
+- Las imágenes de diagramas de inspección vehicular deben guardarse en el disco
+  local (`storage/app/public`) y almacenar únicamente su ruta relativa en la base
+  de datos; nunca almacenes binarios BLOB en tablas.
 
-## Interfaz, Bootstrap y JavaScript
+## Interfaz, React y Tailwind CSS
 
-- Bootstrap 5 se sirve **desde el propio proyecto** en `app/assets/vendor/`
-  (CSS, JS e iconos). No agregues enlaces a CDN en las vistas nuevas.
-- Los CRUD de usuarios y clientes se resuelven con **modales de Bootstrap 5**
-  sobre el listado, no con páginas de formulario independientes. Usa el modal
-  reutilizable (`data-form-modal`) y el de confirmación (`data-confirmar`).
-- La lógica de interfaz vive en `app/assets/js/main.js`. Evita `onclick` y
-  scripts inline; declara el comportamiento con atributos `data-*`.
-- Toda acción destructiva o irreversible debe confirmarse en un modal, nunca
-  con `confirm()` del navegador.
-- Mantén accesibilidad básica: `aria-label`, `aria-hidden`, foco en el primer
-  campo al abrir un modal y cierre con la tecla Escape.
-- Reutiliza los componentes y utilidades de Bootstrap (`modal`, `alert`,
-  `dropdown`, `progress`, `table`) antes de crear CSS nuevo.
+- El diseño debe ser responsivo y táctil, preparado para pantallas de tablets
+  (mínimo 44px de área de contacto en botones y selectores) y monitores de PC.
+- Implementa el módulo de inspección gráfica de daños mediante un canvas o
+  esquema vectorial del vehículo que capture coordenadas relativas en porcentaje
+  (`coordX`, `coordY`) para registrar múltiples daños normalizados en
+  `danio_vehiculo`.
+- En el área de inspección táctil en tablets, aplica la propiedad CSS
+  `touch-action: none` para impedir el scroll o zoom accidental mientras se
+  marcan daños.
+- Las tres vistas principales deben respetar el control de acceso basado en
+  roles:
+  - Operador: registro ágil de ingresos con vuelo, llaves, selección de fila,
+    marcas de daños y catálogos dependientes de marca/modelo.
+  - Jefatura: dashboard de solo lectura con recaudación acumulada estimada,
+    ocupación de filas en vivo y monitoreo de vuelos.
+  - Administrador: gestión de usuarios, roles y configuración de capacidad
+    de filas.
+- Protege las rutas en el frontend mediante un componente de React Router que
+  compruebe el token de Sanctum y el rol asignado.
 
 ## Verificación
 
-- Usa Apache y MySQL de XAMPP para probar flujos que dependan del servidor o de
-  la base de datos. No des por válida una prueba que solo comprueba que un
-  archivo existe.
-- Ejecuta las pruebas o comprobaciones disponibles en el repositorio. Si no
-  hay pruebas automatizadas o herramientas configuradas, indícalo y valida
-  manualmente las rutas afectadas cuando sea posible.
-- No ejecutes migraciones destructivas ni borres datos locales.
-- Actualiza `README.md` cuando cambien los pasos de instalación, configuración
-  o ejecución.
+- Usa el entorno local de Apache y MySQL de XAMPP junto con el servidor de Vite
+  para validar el funcionamiento entre backend y frontend.
+- Ejecuta las comprobaciones pertinentes y verifica manualmente las rutas y
+  endpoints afectados antes de dar por cerrada una tarea.
+- No ejecutes migraciones destructivas (`migrate:fresh`) ni elimines datos de
+  prueba locales sin previa confirmación.
+- Actualiza `README.md` cuando cambien variables de entorno, dependencias de
+  Composer o dependencias de npm.

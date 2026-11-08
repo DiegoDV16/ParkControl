@@ -3,80 +3,68 @@
 Este archivo describe las capacidades y el flujo de trabajo que DeepSeek debe
 aplicar al trabajar en el proyecto.
 
-## PHP 8.2+
+## PHP 8.2+ y Laravel
 
-- Dominar PHP 8.2 o superior, incluyendo tipos, manejo de excepciones,
-  sesiones, organización por responsabilidades y prácticas compatibles con
-  versiones actuales.
-- Mantener compatibilidad con la versión de PHP configurada en XAMPP. Verificar
-  esa versión antes de proponer sintaxis o ejecutar pruebas.
-- Seguir el patrón MVC actual. Separar presentación, lógica de control y acceso
-  a datos; no añadir lógica SQL directamente a las vistas.
-- Usar `password_hash()` y `password_verify()` para contraseñas y evitar
-  funciones obsoletas o inseguras.
+- Dominar PHP 8.2 o superior con tipado estricto, atributos, manejo de
+  excepciones y separación de responsabilidades.
+- Desarrollar endpoints y controladores tipo API REST bajo las convenciones de
+  Laravel, empleando Form Requests para validación y API Resources para la
+  transformación de datos hacia el frontend.
+- Implementar autenticación ligera mediante Laravel Sanctum, gestionando la
+  emisión y expiración de tokens según el rol del usuario autenticado.
+- Desacoplar la lógica de cálculo de estadía en días, prórrogas y tarifas de
+  servicios adicionales en clases de servicio dedicadas (`app/Services/`),
+  evitando acumular lógica compleja dentro de los controladores.
 
-## Laravel
+## MySQL, Eloquent y Control de Concurrencia
 
-- Conocer rutas, controladores, modelos Eloquent, Blade, validación,
-  autenticación, middleware, migraciones, seeders, configuración y Artisan.
-- Aplicar estas prácticas cuando Laravel esté efectivamente instalado o cuando
-  la tarea solicite incorporarlo.
-- Antes de implementar una función Laravel, comprobar `composer.json`,
-  dependencias y estructura del proyecto. Si no existe Laravel, no mezclar
-  fragmentos Laravel con la aplicación PHP clásica: señalar el requisito y
-  realizar únicamente los cambios solicitados.
-- Al incorporar Laravel, respetar el flujo de instalación y la configuración
-  para XAMPP/Apache; mantener secretos en `.env` y nunca publicar ese archivo.
+- Diseñar esquemas relacionales estrictos normalizados sin hacer uso de tipos de
+  datos o atributos JSON.
+- Modelar relaciones directas en Eloquent (`hasMany`, `belongsTo`) entre las
+  entidades del sistema: usuarios, roles, clientes, vehículos, marcas, modelos,
+  filas, ingresos, daños y servicios.
+- Consultar de manera relacional los catálogos de marcas y modelos para proveer
+  endpoints eficientes que alimenten los selectores dependientes en cascada.
+- Aplicar transacciones de base de datos con bloqueo pesimista (`DB::transaction`
+  con `lockForUpdate()`) para evaluar la capacidad de las filas y evitar que dos
+  operadores asignen cupos por encima del límite permitido.
+- Tratar phpMyAdmin como herramienta de inspección local y versionar todo cambio
+  de esquema mediante migraciones reproducibles y reversibles de Laravel.
 
-## MySQL, phpMyAdmin y XAMPP
+## React, TypeScript y Tailwind CSS
 
-- Diseñar tablas y relaciones con claves primarias y foráneas, restricciones,
-  índices adecuados y tipos de datos coherentes.
-- Conocer SQL para MySQL, transacciones, integridad referencial y consultas
-  parametrizadas.
-- Tratar phpMyAdmin como interfaz para inspeccionar y administrar MySQL, no
-  como parte de la aplicación ni como mecanismo único para distribuir cambios
-  de esquema.
-- Versionar cambios de estructura como migraciones de Laravel si está
-  disponible; para la aplicación actual, entregar instrucciones SQL
-  reproducibles y explicar cómo aplicarlas en el entorno local de XAMPP.
-- No asumir nombres de tablas, columnas, credenciales ni datos de conexión:
-  inspeccionar el código y el esquema disponible. No incluir secretos en
-  respuestas ni archivos.
+- Crear aplicaciones SPA estructuradas y tipadas con TypeScript, Vite y React
+  Router, organizando el código por módulos o dominios funcionales.
+- Implementar rutas protegidas que verifiquen el estado de autenticación y los
+  permisos por rol (`OPERADOR`, `JEFATURA`, `ADMINISTRADOR`).
+- Desarrollar selectores en cascada para marca y modelo que sincronicen el
+  catálogo relacional recibido desde la API de Laravel y autodetecten el tipo de
+  vehículo.
+- Diseñar interfaces táctiles con Tailwind CSS adaptadas a tablets y monitores
+  de PC, cuidando espaciados, tamaños táctiles mínimos y contraste visual.
+- Construir componentes de canvas o interacción gráfica para inspección de
+  vehículos, manejando eventos de puntero y táctiles (`touchstart`, `touchmove`)
+  y calculando coordenadas relativas en porcentaje para el registro de daños.
 
-## Seguridad web
+## Seguridad y Almacenamiento
 
-- Prevenir inyección SQL con consultas preparadas o Eloquent.
-- Prevenir XSS escapando datos al generar HTML; prevenir CSRF y proteger
-  sesiones y autorización en los formularios y acciones correspondientes.
-- Validar datos en el servidor aunque también exista validación en el
-  navegador.
-- Al gestionar archivos, comprobar tipo, tamaño y nombre, y evitar que las
-  cargas puedan ejecutarse como código.
-
-## Bootstrap 5 y JavaScript
-
-- Usar Bootstrap 5 (servido localmente en `app/assets/vendor/`) para modales,
-  alertas, dropdowns, tablas y barras de progreso.
-- Implementar los formularios de alta y edición de usuarios y clientes como
-  modales sobre el listado, reutilizando el mismo markup y el JS compartido.
-- Escribir JavaScript progresivo en `app/assets/js/main.js`, sin manejadores
-  inline, usando atributos `data-*` y APIs de Bootstrap
-  (`bootstrap.Modal`, `bootstrap.Alert`).
-- Confirmar acciones destructivas con un modal de confirmación reutilizable.
-- Validar siempre en el servidor; el JavaScript es una ayuda de interfaz.
+- Prevenir inyecciones SQL mediante el uso constante de consultas parametrizadas
+  y Eloquent ORM.
+- Validar exhaustivamente las entradas en el servidor, comprobando rangos de
+  fechas, formatos de patente y consistencia entre horas de inicio y término.
+- Asegurar contraseñas mediante `Hash::make()` y evitar exponer datos sensibles
+  en respuestas públicas.
+- Almacenar archivos multimedia o esquemas de daños en el almacenamiento local
+  del servidor (`storage/app/public`), guardando únicamente su ruta relativa en la
+  base de datos sin recurrir a campos BLOB.
 
 ## Flujo de trabajo para cada cambio
 
-1. Identificar los archivos y el flujo MVC implicados; revisar el README y los
-   patrones existentes antes de editar.
-2. Confirmar si el cambio pertenece a PHP clásico o a Laravel. No cambiar de
-   arquitectura por iniciativa propia.
-3. Implementar la solución más pequeña que complete el requisito, cuidando
-   seguridad, compatibilidad PHP 8.2+ y funcionamiento con MySQL.
-4. Si hay cambios de base de datos, incluir pasos reproducibles y proteger los
-   datos existentes.
-5. Ejecutar las comprobaciones pertinentes y resumir qué se verificó y qué no
-   pudo probarse en el entorno local.
-6. Actualizar la documentación relacionada cuando cambien la configuración o
-   los pasos de uso.
+1. Inspeccionar los modelos, migraciones, rutas de API y componentes de React
+   involucrados antes de realizar cambios de código.
+2. Comprobar que las respuestas JSON de Laravel coincidan en nombres y tipos con
+   las interfaces TypeScript del frontend.
+3. Proteger la integridad de la base de datos en XAMPP y verificar que no existan
+   operaciones destructivas no autorizadas.
+4. Entregar soluciones modulares, documentadas en español y listas para ser
+   probadas en el entorno local de desarrollo.
