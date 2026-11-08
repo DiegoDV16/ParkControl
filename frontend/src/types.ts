@@ -52,6 +52,72 @@ export interface Fila {
   libres: number
 }
 
+export interface ModeloCatalogo {
+  idModelo: number
+  modelo: string
+}
+
+export interface MarcaCatalogo {
+  idMarca: number
+  marca: string
+  modelos: ModeloCatalogo[]
+}
+
+export interface ServicioCatalogo {
+  idServicioExtra: number
+  servicioExtra: string
+  valor: number | string
+}
+
+export interface TipoVehiculoCatalogo {
+  idTipoVehiculo: number
+  tipoVehiculo: string
+}
+
+export interface Catalogos {
+  marcas: MarcaCatalogo[]
+  servicios: ServicioCatalogo[]
+  tipos: TipoVehiculoCatalogo[]
+}
+
+export interface IngresoResumen {
+  idIngreso: number
+  estado: string
+  fechaInicio: string
+  horaInicio: string
+  fechaRegreso: string | null
+  horaRegreso: string | null
+  numeroVuelo: string | null
+  llaves: number
+  fila: string
+  cliente: { idCliente: number; rut: string; nombre: string }
+  vehiculo: { idVehiculo: number; patente: string; marca: string | null; modelo: string | null; tipo: string | null }
+  servicio: string | null
+  dias: number
+  montoProyectado: number
+}
+
+export interface IngresoPayload {
+  rut: string
+  nombres: string
+  apellidoPaterno: string
+  apellidoMaterno?: string | null
+  telefono?: string | null
+  correo?: string | null
+  patente: string
+  idModelo: number
+  idTipoVehiculo: number
+  idFila: number
+  idServicioExtra?: number | null
+  fechaInicio: string
+  horaInicio: string
+  fechaRegreso?: string | null
+  horaRegreso?: string | null
+  numeroVuelo?: string | null
+  llaves: number
+  observacion?: string | null
+}
+
 export interface UsuarioPayload {
   idRol: number
   rut: string
