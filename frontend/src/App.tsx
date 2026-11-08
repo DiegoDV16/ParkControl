@@ -4,6 +4,8 @@ import { AppLayout } from './layouts/AppLayout'
 import { DashboardPage } from './pages/DashboardPage'
 import { ForbiddenPage } from './pages/ForbiddenPage'
 import { LoginPage } from './pages/LoginPage'
+import { PerfilPage } from './pages/PerfilPage'
+import { UsuariosPage } from './pages/UsuariosPage'
 
 export default function App() {
   return (
@@ -13,6 +15,11 @@ export default function App() {
       <Route element={<ProtectedRoute />}>
         <Route element={<AppLayout />}>
           <Route index element={<DashboardPage />} />
+          <Route path="perfil" element={<PerfilPage />} />
+
+          <Route element={<ProtectedRoute roles={[1]} />}>
+            <Route path="usuarios" element={<UsuariosPage />} />
+          </Route>
         </Route>
       </Route>
 
