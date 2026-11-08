@@ -224,7 +224,7 @@ export function listarDanios(idIngreso: number): Promise<{ data: Danio[] }> {
 
 export function crearDanio(
   idIngreso: number,
-  datos: { coordX: number; coordY: number; tipoDanio: string; detalle?: string | null },
+  datos: { vista: string; coordX: number; coordY: number; tipoDanio: string; detalle?: string | null },
 ): Promise<{ data: Danio }> {
   return request<{ data: Danio }>(`/ingresos/${idIngreso}/danios`, {
     method: 'POST',

@@ -13,7 +13,7 @@ class DanioVehiculo extends Model
 
     public $timestamps = false;
 
-    protected $fillable = ['idIngreso', 'coordX', 'coordY', 'tipoDanio', 'detalle'];
+    protected $fillable = ['idIngreso', 'vista', 'coordX', 'coordY', 'tipoDanio', 'detalle'];
 
     protected $casts = [
         'coordX' => 'float',

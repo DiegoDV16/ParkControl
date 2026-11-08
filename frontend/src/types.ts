@@ -80,8 +80,16 @@ export interface Catalogos {
   tipos: TipoVehiculoCatalogo[]
 }
 
+export type VistaDanio =
+  | 'superior'
+  | 'lateral_izquierda'
+  | 'lateral_derecha'
+  | 'frontal'
+  | 'trasera'
+
 export interface Danio {
   idDanio: number
+  vista: VistaDanio
   coordX: number
   coordY: number
   tipoDanio: string

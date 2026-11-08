@@ -13,6 +13,8 @@ class DanioController extends Controller
 {
     public const TIPOS = ['Rayón', 'Abolladura', 'Golpe', 'Vidrio', 'Espejo', 'Llanta', 'Otro'];
 
+    public const VISTAS = ['superior', 'lateral_izquierda', 'lateral_derecha', 'frontal', 'trasera'];
+
     public function index(Ingreso $ingreso): JsonResponse
     {
         return response()->json([
@@ -23,11 +25,14 @@ class DanioController extends Controller
     public function store(Request $request, Ingreso $ingreso): JsonResponse
     {
         $datos = $request->validate([
+            'vista' => ['nullable', 'string', Rule::in(self::VISTAS)],
             'coordX' => ['required', 'numeric', 'min:0', 'max:100'],
             'coordY' => ['required', 'numeric', 'min:0', 'max:100'],
             'tipoDanio' => ['required', 'string', Rule::in(self::TIPOS)],
             'detalle' => ['nullable', 'string', 'max:150'],
         ]);
+
+        $datos['vista'] = $datos['vista'] ?? 'superior';
 
         $danio = $ingreso->danios()->create($datos);
 
