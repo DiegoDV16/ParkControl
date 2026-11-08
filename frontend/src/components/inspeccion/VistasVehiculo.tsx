@@ -1,90 +1,93 @@
 import type { VistaInspeccion } from './tipos'
 
-const TINTA = '#334155'
-const CARROCERIA = '#f8fafc'
-const VIDRIO = '#cbd5e1'
-
-interface Props {
-  vista: VistaInspeccion
+interface VistaProps {
+  className?: string
 }
 
-function Frontal({ trasera = false }: { trasera?: boolean }) {
+export function CarTopView({ className = 'h-full w-full' }: VistaProps) {
   return (
-    <svg viewBox="0 0 200 160" width="200" height="160" xmlns="http://www.w3.org/2000/svg"
-      className="h-full w-full" style={{ pointerEvents: 'none' }} aria-hidden="true">
-      <g stroke={TINTA} strokeWidth="2.5" fill={CARROCERIA} strokeLinejoin="round" strokeLinecap="round">
-        <path d="M34 46 Q34 34 46 34 H154 Q166 34 166 46 V120 H34 Z" />
-        <path d="M58 46 L72 20 H128 L142 46 Z" fill={VIDRIO} fillOpacity="0.4" />
-        <path d="M46 60 H154" fill="none" strokeWidth="1.5" />
-        <path d="M34 100 H166" fill="none" strokeWidth="1.5" />
-        <rect x="42" y="70" width="34" height="14" rx="4" fill={trasera ? '#fecaca' : CARROCERIA} />
-        <rect x="124" y="70" width="34" height="14" rx="4" fill={trasera ? '#fecaca' : CARROCERIA} />
-        <rect x="82" y="70" width="36" height="18" rx="3" />
-        <path d="M86 76 H114 M86 82 H114" fill="none" strokeWidth="1.5" />
-        <rect x="34" y="112" width="132" height="10" rx="4" />
-        <rect x="88" y="114" width="24" height="6" rx="2" />
-        <path d="M26 62 q-8 2 -6 12 l8 -2 Z" />
-        <path d="M174 62 q8 2 6 12 l-8 -2 Z" />
-        <rect x="44" y="120" width="18" height="6" rx="2" fill={TINTA} />
-        <rect x="138" y="120" width="18" height="6" rx="2" fill={TINTA} />
+    <svg viewBox="0 0 200 420" fill="none" xmlns="http://www.w3.org/2000/svg"
+      className={className} style={{ pointerEvents: 'none' }} aria-hidden="true">
+      <path
+        d="M50 35 C50 15, 150 15, 150 35 L156 85 C164 95, 168 115, 168 145 L168 315 C168 345, 164 370, 154 390 C145 408, 55 408, 46 390 C36 370, 32 345, 32 315 L32 145 C32 115, 36 95, 44 85 Z"
+        stroke="#334155" strokeWidth="2.5" fill="#f8fafc"
+      />
+      <path d="M30 110 C20 110, 15 120, 20 132 C26 136, 32 132, 32 125 Z" stroke="#334155" strokeWidth="2" fill="#cbd5e1" />
+      <path d="M170 110 C180 110, 185 120, 180 132 C174 136, 168 132, 168 125 Z" stroke="#334155" strokeWidth="2" fill="#cbd5e1" />
+      <path d="M48 90 C70 85, 130 85, 152 90" stroke="#64748b" strokeWidth="1.5" strokeDasharray="3 3" />
+      <path d="M44 105 C70 98, 130 98, 156 105 L146 160 C125 155, 75 155, 54 160 Z" stroke="#334155" strokeWidth="2" fill="#cbd5e1" fillOpacity="0.45" />
+      <path d="M54 168 C75 164, 125 164, 146 168 L144 275 C125 279, 75 279, 56 275 Z" stroke="#475569" strokeWidth="1.5" fill="#ffffff" />
+      <path d="M54 285 C75 280, 125 280, 146 285 L152 330 C130 325, 70 325, 48 330 Z" stroke="#334155" strokeWidth="2" fill="#cbd5e1" fillOpacity="0.45" />
+      <path d="M46 345 C70 340, 130 340, 154 345" stroke="#64748b" strokeWidth="1.5" strokeDasharray="3 3" />
+    </svg>
+  )
+}
+
+export function CarSideView({ className = 'h-full w-full', flip = false }: VistaProps & { flip?: boolean }) {
+  return (
+    <svg viewBox="0 0 500 170" fill="none" xmlns="http://www.w3.org/2000/svg"
+      className={className} style={{ pointerEvents: 'none' }} aria-hidden="true">
+      <g transform={flip ? 'translate(500 0) scale(-1 1)' : undefined}>
+        <path
+          d="M25 125 C30 100, 48 95, 80 95 L145 92 C170 70, 205 40, 250 40 L345 40 C375 40, 410 75, 435 90 L465 94 C478 95, 485 105, 485 118 L480 132 C470 134, 460 134, 452 134 C446 115, 425 102, 405 102 C385 102, 364 115, 358 134 L180 134 C174 115, 153 102, 133 102 C113 102, 92 115, 86 134 L35 134 C25 134, 20 130, 25 125 Z"
+          stroke="#334155" strokeWidth="2.5" fill="#f8fafc"
+        />
+        <circle cx="133" cy="134" r="28" stroke="#334155" strokeWidth="2.5" fill="#0f172a" />
+        <circle cx="133" cy="134" r="14" stroke="#94a3b8" strokeWidth="2" fill="#e2e8f0" />
+        <circle cx="405" cy="134" r="28" stroke="#334155" strokeWidth="2.5" fill="#0f172a" />
+        <circle cx="405" cy="134" r="14" stroke="#94a3b8" strokeWidth="2" fill="#e2e8f0" />
+        <path d="M172 90 L240 50 L275 50 L275 90 Z" stroke="#334155" strokeWidth="1.5" fill="#cbd5e1" fillOpacity="0.45" />
+        <path d="M285 50 L342 50 C365 50, 392 78, 405 90 L285 90 Z" stroke="#334155" strokeWidth="1.5" fill="#cbd5e1" fillOpacity="0.45" />
+        <path d="M280 48 L280 130" stroke="#64748b" strokeWidth="1.5" />
+        <path d="M170 92 L195 132" stroke="#64748b" strokeWidth="1.5" />
+        <path d="M408 92 L385 132" stroke="#64748b" strokeWidth="1.5" />
+        <rect x="250" y="96" width="14" height="3" rx="1.5" fill="#334155" />
+        <rect x="295" y="96" width="14" height="3" rx="1.5" fill="#334155" />
       </g>
     </svg>
   )
 }
 
-function Lateral() {
+export function CarFrontView({ className = 'h-full w-full' }: VistaProps) {
   return (
-    <svg viewBox="0 0 320 140" width="320" height="140" xmlns="http://www.w3.org/2000/svg"
-      className="h-full w-full" style={{ pointerEvents: 'none' }} aria-hidden="true">
-      <g stroke={TINTA} strokeWidth="2.5" fill={CARROCERIA} strokeLinejoin="round" strokeLinecap="round">
-        <path d="M18 100 C18 84 28 76 50 72 L74 46 C86 32 108 24 140 24 H196 C226 24 246 32 258 46 L278 54 C298 58 306 68 306 82 V100 Z" />
-        <path d="M84 44 L98 30 H148 V44 Z" fill={VIDRIO} fillOpacity="0.4" />
-        <path d="M156 30 H196 L216 44 H156 Z" fill={VIDRIO} fillOpacity="0.4" />
-        <line x1="152" y1="30" x2="152" y2="100" strokeWidth="1.5" />
-        <line x1="216" y1="44" x2="216" y2="100" strokeWidth="1.5" />
-        <line x1="30" y1="86" x2="290" y2="86" strokeWidth="1.2" />
-        <path d="M164 58 H176 M224 58 H236" strokeWidth="1.8" fill="none" />
-        <circle cx="92" cy="100" r="22" fill={CARROCERIA} />
-        <circle cx="92" cy="100" r="10" fill={VIDRIO} fillOpacity="0.4" />
-        <circle cx="248" cy="100" r="22" fill={CARROCERIA} />
-        <circle cx="248" cy="100" r="10" fill={VIDRIO} fillOpacity="0.4" />
-        <rect x="292" y="64" width="14" height="8" rx="2" />
-        <rect x="18" y="66" width="12" height="8" rx="2" fill={VIDRIO} fillOpacity="0.4" />
-        <path d="M212 44 q10 -4 12 4 l-6 6" fill={CARROCERIA} />
-      </g>
+    <svg viewBox="0 0 240 180" fill="none" xmlns="http://www.w3.org/2000/svg"
+      className={className} style={{ pointerEvents: 'none' }} aria-hidden="true">
+      <path d="M60 45 C75 40, 165 40, 180 45 L198 95 L42 95 Z" stroke="#334155" strokeWidth="2.5" fill="#cbd5e1" fillOpacity="0.45" />
+      <path d="M38 85 C26 85, 22 92, 28 102 C34 104, 40 98, 40 90 Z" stroke="#334155" strokeWidth="1.5" fill="#cbd5e1" />
+      <path d="M202 85 C214 85, 218 92, 212 102 C206 104, 200 98, 200 90 Z" stroke="#334155" strokeWidth="1.5" fill="#cbd5e1" />
+      <path d="M38 95 C38 90, 202 90, 202 95 L208 120 C212 135, 208 152, 200 156 L40 156 C32 152, 28 135, 32 120 Z" stroke="#334155" strokeWidth="2.5" fill="#f8fafc" />
+      <path d="M44 105 L74 105 C72 118, 55 120, 44 118 Z" stroke="#334155" strokeWidth="1.5" fill="#fef08a" />
+      <path d="M196 105 L166 105 C168 118, 185 120, 196 118 Z" stroke="#334155" strokeWidth="1.5" fill="#fef08a" />
+      <rect x="85" y="106" width="70" height="18" rx="3" stroke="#475569" strokeWidth="1.5" fill="#1e293b" />
+      <rect x="95" y="134" width="50" height="16" rx="2" stroke="#334155" strokeWidth="1.5" fill="#ffffff" />
+      <rect x="36" y="152" width="22" height="18" rx="2" fill="#0f172a" />
+      <rect x="182" y="152" width="22" height="18" rx="2" fill="#0f172a" />
     </svg>
   )
 }
 
-function Superior() {
+export function CarRearView({ className = 'h-full w-full' }: VistaProps) {
   return (
-    <svg viewBox="0 0 160 260" width="160" height="260" xmlns="http://www.w3.org/2000/svg"
-      className="h-full w-full" style={{ pointerEvents: 'none' }} aria-hidden="true">
-      <g stroke={TINTA} strokeWidth="2.5" fill={CARROCERIA} strokeLinejoin="round" strokeLinecap="round">
-        <rect x="40" y="14" width="80" height="232" rx="30" />
-        <path d="M54 66 L64 34 H96 L106 66 Z" />
-        <path d="M54 78 L64 60 H96 L106 78 Z" fill={VIDRIO} fillOpacity="0.4" />
-        <rect x="60" y="88" width="40" height="72" rx="12" />
-        <path d="M54 172 L64 196 H96 L106 172 Z" fill={VIDRIO} fillOpacity="0.4" />
-        <path d="M54 210 H106" strokeWidth="1.5" />
-        <path d="M54 222 H106" strokeWidth="1.5" />
-        <path d="M30 66 q-8 2 -6 12 l8 -2 Z" />
-        <path d="M130 66 q8 2 6 12 l-8 -2 Z" />
-        <rect x="34" y="54" width="8" height="22" rx="3" />
-        <rect x="118" y="54" width="8" height="22" rx="3" />
-        <rect x="34" y="180" width="8" height="22" rx="3" />
-        <rect x="118" y="180" width="8" height="22" rx="3" />
-      </g>
+    <svg viewBox="0 0 240 180" fill="none" xmlns="http://www.w3.org/2000/svg"
+      className={className} style={{ pointerEvents: 'none' }} aria-hidden="true">
+      <path d="M60 45 C75 40, 165 40, 180 45 L196 90 L44 90 Z" stroke="#334155" strokeWidth="2.5" fill="#cbd5e1" fillOpacity="0.45" />
+      <path d="M38 85 L26 88 L30 96 L40 92 Z" stroke="#334155" strokeWidth="1.5" fill="#94a3b8" />
+      <path d="M202 85 L214 88 L210 96 L200 92 Z" stroke="#334155" strokeWidth="1.5" fill="#94a3b8" />
+      <path d="M38 90 L202 90 L208 120 C212 138, 206 154, 200 156 L40 156 C34 154, 28 138, 32 120 Z" stroke="#334155" strokeWidth="2.5" fill="#f8fafc" />
+      <path d="M42 102 L72 104 C70 116, 54 118, 42 114 Z" stroke="#334155" strokeWidth="1.5" fill="#ef4444" />
+      <path d="M198 102 L168 104 C170 116, 186 118, 198 114 Z" stroke="#334155" strokeWidth="1.5" fill="#ef4444" />
+      <rect x="95" y="112" width="50" height="18" rx="2" stroke="#334155" strokeWidth="1.5" fill="#ffffff" />
+      <line x1="45" y1="138" x2="195" y2="138" stroke="#64748b" strokeWidth="1.5" />
+      <rect x="36" y="152" width="22" height="18" rx="2" fill="#0f172a" />
+      <rect x="182" y="152" width="22" height="18" rx="2" fill="#0f172a" />
     </svg>
   )
 }
 
-export function VistaVehiculo({ vista }: Props) {
-  if (vista === 'frontal') return <Frontal />
-  if (vista === 'trasera') return <Frontal trasera />
-  if (vista === 'lateral_derecha') {
-    return <div className="h-full w-full" style={{ transform: 'scaleX(-1)' }}><Lateral /></div>
-  }
-  if (vista === 'lateral_izquierda') return <Lateral />
-  return <Superior />
+export function VistaVehiculo({ vista }: { vista: VistaInspeccion }) {
+  if (vista === 'frontal') return <CarFrontView />
+  if (vista === 'trasera') return <CarRearView />
+  if (vista === 'lateral_izquierda') return <CarSideView />
+  if (vista === 'lateral_derecha') return <CarSideView flip />
+  return <CarTopView />
 }
