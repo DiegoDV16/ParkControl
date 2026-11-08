@@ -121,13 +121,13 @@ export function DaniosModal({ ingreso, soloLectura, onCerrar }: Props) {
       abierto
       titulo={`Inspección de daños · ${ingreso.vehiculo.patente}`}
       onCerrar={onCerrar}
-      ancho="max-w-3xl"
+      ancho="max-w-5xl"
     >
       <div className="space-y-4">
         <p className="text-sm text-pc-muted">
           {soloLectura
             ? 'Vista de solo lectura de los daños registrados al ingreso.'
-            : 'Elige el tipo, escribe el detalle y toca la vista del vehículo. Puedes arrastrar los marcadores y editarlos desde la lista.'}
+            : 'Marca el daño sobre el dibujo del vehículo. Puedes arrastrar los marcadores, acercar cada vista y editar los daños desde la lista.'}
         </p>
 
         {error && (
@@ -136,100 +136,98 @@ export function DaniosModal({ ingreso, soloLectura, onCerrar }: Props) {
           </div>
         )}
 
-        <div className="grid gap-4 lg:grid-cols-[1.5fr_1fr]">
-          <CanvasDanios
-            danios={danios}
-            tipo={ingreso.vehiculo.tipo}
-            soloLectura={soloLectura}
-            onMarcar={(vista, x, y) => void marcar(vista, x, y)}
-            onMover={mover}
-            onMoverFin={(id, x, y) => void moverFin(id, x, y)}
-          />
+        <CanvasDanios
+          danios={danios}
+          tipo={ingreso.vehiculo.tipo}
+          soloLectura={soloLectura}
+          onMarcar={(vista, x, y) => void marcar(vista, x, y)}
+          onMover={mover}
+          onMoverFin={(id, x, y) => void moverFin(id, x, y)}
+        />
 
-          <div className="space-y-3">
-            {!soloLectura && (
-              <>
-                <div>
-                  <label htmlFor="dTipo" className="pc-label">Tipo de daño</label>
-                  <select id="dTipo" className="pc-input" value={tipo}
-                    onChange={(evento) => setTipo(evento.target.value)}>
-                    {TIPOS.map((item) => (
-                      <option key={item} value={item}>{item}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label htmlFor="dDetalle" className="pc-label">Detalle</label>
-                  <input id="dDetalle" className="pc-input" maxLength={150} value={detalle}
-                    onChange={(evento) => setDetalle(evento.target.value)}
-                    placeholder="Puerta izquierda, parachoques…" />
-                </div>
-              </>
-            )}
-
-            <div className="rounded-lg border border-pc-border">
-              <div className="border-b border-pc-border px-3 py-2 text-xs uppercase tracking-wide text-pc-muted">
-                Daños marcados ({danios.length})
+        <div className="grid gap-4 sm:grid-cols-2">
+          {!soloLectura && (
+            <div className="space-y-3">
+              <div>
+                <label htmlFor="dTipo" className="pc-label">Tipo de daño</label>
+                <select id="dTipo" className="pc-input" value={tipo}
+                  onChange={(evento) => setTipo(evento.target.value)}>
+                  {TIPOS.map((item) => (
+                    <option key={item} value={item}>{item}</option>
+                  ))}
+                </select>
               </div>
-              <ul className="max-h-64 divide-y divide-pc-border/60 overflow-y-auto text-sm">
-                {danios.length === 0 && (
-                  <li className="px-3 py-4 text-center text-xs text-pc-muted">Sin daños registrados.</li>
-                )}
-                {danios.map((danio, indice) => (
-                  <li key={danio.idDanio} className="px-3 py-2">
-                    <div className="flex items-start gap-2">
-                      <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-pc-danger text-[10px] font-bold text-[#1a0505]">
-                        {indice + 1}
-                      </span>
-                      <div className="min-w-0 flex-1">
-                        <p className="font-medium">{danio.tipoDanio}</p>
-                        <p className="text-[10px] uppercase tracking-wide text-pc-muted">
-                          {ETIQUETAS_VISTA[danio.vista] ?? danio.vista}
-                        </p>
-                        {danio.detalle && <p className="text-xs text-pc-muted">{danio.detalle}</p>}
-                      </div>
-                      {!soloLectura && (
-                        <div className="flex gap-2">
-                          <button type="button" className="text-xs text-pc-mint hover:underline"
-                            onClick={() => abrirEdicion(danio)}>
-                            Editar
-                          </button>
-                          <button type="button" className="text-xs text-pc-danger hover:underline"
-                            onClick={() => void quitar(danio.idDanio)}>
-                            Quitar
-                          </button>
-                        </div>
-                      )}
-                    </div>
+              <div>
+                <label htmlFor="dDetalle" className="pc-label">Detalle</label>
+                <input id="dDetalle" className="pc-input" maxLength={150} value={detalle}
+                  onChange={(evento) => setDetalle(evento.target.value)}
+                  placeholder="Puerta izquierda, parachoques…" />
+              </div>
+            </div>
+          )}
 
-                    {editando === danio.idDanio && !soloLectura && (
-                      <div className="mt-2 space-y-2 rounded-lg border border-pc-border bg-pc-panel2/50 p-2">
-                        <select className="pc-input" value={editTipo}
-                          onChange={(evento) => setEditTipo(evento.target.value)}>
-                          {TIPOS.map((item) => (
-                            <option key={item} value={item}>{item}</option>
-                          ))}
-                        </select>
-                        <input className="pc-input" maxLength={150} value={editDetalle}
-                          onChange={(evento) => setEditDetalle(evento.target.value)}
-                          placeholder="Detalle" />
-                        <div className="flex justify-end gap-2">
-                          <button type="button" className="pc-btn-ghost px-2 text-xs"
-                            onClick={() => setEditando(null)}>
-                            Cancelar
-                          </button>
-                          <button type="button" className="pc-btn-primary px-2 text-xs"
-                            disabled={guardando}
-                            onClick={() => void guardarEdicion(danio.idDanio)}>
-                            Guardar
-                          </button>
-                        </div>
+          <div className={`rounded-lg border border-pc-border ${soloLectura ? 'sm:col-span-2' : ''}`}>
+            <div className="border-b border-pc-border px-3 py-2 text-xs uppercase tracking-wide text-pc-muted">
+              Daños marcados ({danios.length})
+            </div>
+            <ul className="max-h-56 divide-y divide-pc-border/60 overflow-y-auto text-sm">
+              {danios.length === 0 && (
+                <li className="px-3 py-4 text-center text-xs text-pc-muted">Sin daños registrados.</li>
+              )}
+              {danios.map((danio, indice) => (
+                <li key={danio.idDanio} className="px-3 py-2">
+                  <div className="flex items-start gap-2">
+                    <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-pc-danger text-[10px] font-bold text-[#1a0505]">
+                      {indice + 1}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium">{danio.tipoDanio}</p>
+                      <p className="text-[10px] uppercase tracking-wide text-pc-muted">
+                        {ETIQUETAS_VISTA[danio.vista] ?? danio.vista}
+                      </p>
+                      {danio.detalle && <p className="text-xs text-pc-muted">{danio.detalle}</p>}
+                    </div>
+                    {!soloLectura && (
+                      <div className="flex gap-2">
+                        <button type="button" className="text-xs text-pc-mint hover:underline"
+                          onClick={() => abrirEdicion(danio)}>
+                          Editar
+                        </button>
+                        <button type="button" className="text-xs text-pc-danger hover:underline"
+                          onClick={() => void quitar(danio.idDanio)}>
+                          Quitar
+                        </button>
                       </div>
                     )}
-                  </li>
-                ))}
-              </ul>
-            </div>
+                  </div>
+
+                  {editando === danio.idDanio && !soloLectura && (
+                    <div className="mt-2 space-y-2 rounded-lg border border-pc-border bg-pc-panel2/50 p-2">
+                      <select className="pc-input" value={editTipo}
+                        onChange={(evento) => setEditTipo(evento.target.value)}>
+                        {TIPOS.map((item) => (
+                          <option key={item} value={item}>{item}</option>
+                        ))}
+                      </select>
+                      <input className="pc-input" maxLength={150} value={editDetalle}
+                        onChange={(evento) => setEditDetalle(evento.target.value)}
+                        placeholder="Detalle" />
+                      <div className="flex justify-end gap-2">
+                        <button type="button" className="pc-btn-ghost px-2 text-xs"
+                          onClick={() => setEditando(null)}>
+                          Cancelar
+                        </button>
+                        <button type="button" className="pc-btn-primary px-2 text-xs"
+                          disabled={guardando}
+                          onClick={() => void guardarEdicion(danio.idDanio)}>
+                          Guardar
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </li>
+              ))}
+            </ul>
           </div>
         </div>
 
