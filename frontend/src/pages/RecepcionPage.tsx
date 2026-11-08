@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import { useAuth } from '../auth/AuthContext'
 import { CobroModal } from '../components/CobroModal'
+import { DaniosModal } from '../components/DaniosModal'
 import {
   ApiError,
   crearIngreso,
@@ -78,6 +79,7 @@ export function RecepcionPage() {
   const [form, setForm] = useState(formularioInicial())
   const [estimacion, setEstimacion] = useState<{ dias: number; monto: number } | null>(null)
   const [cobro, setCobro] = useState<IngresoResumen | null>(null)
+  const [danios, setDanios] = useState<IngresoResumen | null>(null)
 
   const cargar = useCallback(async () => {
     setCargando(true)
@@ -451,6 +453,13 @@ export function RecepcionPage() {
                   <td className="px-4 py-3">{ingreso.dias}</td>
                   <td className="px-4 py-3 text-right font-semibold">
                     <div>${ingreso.montoProyectado.toLocaleString('es-CL')}</div>
+                    <button
+                      type="button"
+                      className="pc-btn-ghost mt-1 px-2 text-xs"
+                      onClick={() => setDanios(ingreso)}
+                    >
+                      Daños
+                    </button>
                     {!esJefatura && (
                       <button
                         type="button"
@@ -481,6 +490,14 @@ export function RecepcionPage() {
             setOk(mensaje)
             void cargar()
           }}
+        />
+      )}
+
+      {danios && (
+        <DaniosModal
+          ingreso={danios}
+          soloLectura={esJefatura}
+          onCerrar={() => setDanios(null)}
         />
       )}
     </div>

@@ -1,6 +1,7 @@
 import type {
   Catalogos,
   CobroPayload,
+  Danio,
   Fila,
   IngresoPayload,
   IngresoResumen,
@@ -215,6 +216,24 @@ export function cobrarIngreso(
     method: 'POST',
     body: JSON.stringify(datos),
   })
+}
+
+export function listarDanios(idIngreso: number): Promise<{ data: Danio[] }> {
+  return request<{ data: Danio[] }>(`/ingresos/${idIngreso}/danios`)
+}
+
+export function crearDanio(
+  idIngreso: number,
+  datos: { coordX: number; coordY: number; tipoDanio: string; detalle?: string | null },
+): Promise<{ data: Danio }> {
+  return request<{ data: Danio }>(`/ingresos/${idIngreso}/danios`, {
+    method: 'POST',
+    body: JSON.stringify(datos),
+  })
+}
+
+export function eliminarDanio(idDanio: number): Promise<{ message: string }> {
+  return request<{ message: string }>(`/danios/${idDanio}`, { method: 'DELETE' })
 }
 
 export function eliminarUsuario(id: number, forzar = false): Promise<{ message: string }> {

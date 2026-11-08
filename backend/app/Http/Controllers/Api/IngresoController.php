@@ -58,6 +58,7 @@ class IngresoController extends Controller
             'vehiculo.tipo',
             'fila',
             'servicio',
+            'danios',
         ])
             ->whereNull('fechaTermino')
             ->orderByDesc('idIngreso')
@@ -145,7 +146,7 @@ class IngresoController extends Controller
             ]);
         });
 
-        $ingreso->load(['cliente', 'vehiculo.modelo.marca', 'vehiculo.tipo', 'fila', 'servicio']);
+        $ingreso->load(['cliente', 'vehiculo.modelo.marca', 'vehiculo.tipo', 'fila', 'servicio', 'danios']);
 
         return (new IngresoResource($ingreso))
             ->response()
@@ -226,7 +227,7 @@ class IngresoController extends Controller
 
         [$cerrado, $minutos, $dias, $monto, $vuelto] = $resultado;
 
-        $cerrado->load(['cliente', 'vehiculo.modelo.marca', 'vehiculo.tipo', 'fila', 'servicio']);
+        $cerrado->load(['cliente', 'vehiculo.modelo.marca', 'vehiculo.tipo', 'fila', 'servicio', 'danios']);
 
         return response()->json([
             'data' => new IngresoResource($cerrado),
@@ -270,7 +271,7 @@ class IngresoController extends Controller
 
     public function show(Ingreso $ingreso): JsonResponse
     {
-        $ingreso->load(['cliente', 'vehiculo.modelo.marca', 'vehiculo.tipo', 'fila', 'servicio']);
+        $ingreso->load(['cliente', 'vehiculo.modelo.marca', 'vehiculo.tipo', 'fila', 'servicio', 'danios']);
 
         return (new IngresoResource($ingreso))->response();
     }
