@@ -77,6 +77,10 @@ class IngresoResource extends JsonResource
                 'tipoDanio' => $danio->tipoDanio,
                 'detalle' => $danio->detalle,
             ])->values()),
+            'inspeccionUrl' => $this->inspeccionRuta
+                ? $request->getSchemeAndHttpHost().'/storage/'.$this->inspeccionRuta
+                : null,
+            'inspeccionSinDanios' => (bool) $this->inspeccionSinDanios,
         ];
     }
 }

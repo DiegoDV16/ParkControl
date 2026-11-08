@@ -112,6 +112,8 @@ export interface IngresoResumen {
   dias: number
   montoProyectado: number
   danios?: Danio[]
+  inspeccionUrl?: string | null
+  inspeccionSinDanios?: boolean
 }
 
 export interface IngresoPayload {

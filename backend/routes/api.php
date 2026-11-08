@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\CatalogoController;
 use App\Http\Controllers\Api\DanioController;
 use App\Http\Controllers\Api\FilaController;
 use App\Http\Controllers\Api\IngresoController;
+use App\Http\Controllers\Api\InspeccionController;
 use App\Http\Controllers\Api\PerfilController;
 use App\Http\Controllers\Api\RolController;
 use App\Http\Controllers\Api\UsuarioController;
@@ -36,6 +37,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
 Route::middleware(['auth:sanctum', 'role:ADMINISTRADOR,OPERADOR'])->group(function (): void {
     Route::post('/ingresos', [IngresoController::class, 'store']);
     Route::post('/ingresos/{ingreso}/cobrar', [IngresoController::class, 'cobrar']);
+    Route::post('/ingresos/{ingreso}/inspeccion', [InspeccionController::class, 'store']);
     Route::post('/ingresos/{ingreso}/danios', [DanioController::class, 'store']);
     Route::put('/danios/{danio}', [DanioController::class, 'update']);
     Route::delete('/danios/{danio}', [DanioController::class, 'destroy']);
