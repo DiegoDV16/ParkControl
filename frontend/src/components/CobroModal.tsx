@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { Modal } from './Modal'
+import { ETIQUETAS_VISTA } from './CanvasDanios'
 import { ApiError, cobrarIngreso, previsualizarCobro } from '../lib/api'
 import type { CobroPayload, IngresoResumen, PreviewCobro } from '../types'
 
@@ -80,6 +81,22 @@ export function CobroModal({ ingreso, onCerrar, onCobrado }: Props) {
           <p className="mt-1 text-xs text-pc-muted">
             Entrada: {ingreso.fechaInicio} {ingreso.horaInicio.slice(0, 5)}
           </p>
+        </div>
+
+        <div className="rounded-lg border border-pc-border px-4 py-3 text-sm">
+          <p className="font-semibold">Daños registrados ({ingreso.danios?.length ?? 0})</p>
+          {ingreso.danios && ingreso.danios.length > 0 ? (
+            <ul className="mt-1 space-y-1 text-xs text-pc-muted">
+              {ingreso.danios.map((danio) => (
+                <li key={danio.idDanio}>
+                  • {danio.tipoDanio} · {ETIQUETAS_VISTA[danio.vista] ?? danio.vista}
+                  {danio.detalle ? ` · ${danio.detalle}` : ''}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-xs text-pc-muted">Sin daños marcados.</p>
+          )}
         </div>
 
         {error && (
