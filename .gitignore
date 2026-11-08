@@ -6,3 +6,13 @@ app/config/config.local.php
 *.tmp
 *.bak
 database/*.log
+
+# Stack Laravel (backend) + React (frontend)
+/composer.phar
+/backend/.env
+/backend/vendor/
+/backend/database/*.sqlite
+/backend/storage/logs/*.log
+/frontend/node_modules/
+/frontend/dist/
+/frontend/preview-*.png
