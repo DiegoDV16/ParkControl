@@ -23,11 +23,11 @@ interface ConfigVista {
 }
 
 const VISTAS: ConfigVista[] = [
-  { vista: 'frontal', etiqueta: 'Frontal', aspecto: '200 / 160', vw: 200, vh: 160 },
-  { vista: 'lateral_izquierda', etiqueta: 'Lateral izquierdo', aspecto: '320 / 140', vw: 320, vh: 140 },
-  { vista: 'superior', etiqueta: 'Superior', aspecto: '160 / 260', vw: 160, vh: 260 },
-  { vista: 'trasera', etiqueta: 'Trasera', aspecto: '200 / 160', vw: 200, vh: 160 },
-  { vista: 'lateral_derecha', etiqueta: 'Lateral derecho', aspecto: '320 / 140', vw: 320, vh: 140 },
+  { vista: 'frontal', etiqueta: 'Frontal', aspecto: '240 / 180', vw: 240, vh: 180 },
+  { vista: 'lateral_izquierda', etiqueta: 'Lateral izquierdo', aspecto: '500 / 170', vw: 500, vh: 170 },
+  { vista: 'superior', etiqueta: 'Superior', aspecto: '200 / 420', vw: 200, vh: 420 },
+  { vista: 'trasera', etiqueta: 'Trasera', aspecto: '240 / 180', vw: 240, vh: 180 },
+  { vista: 'lateral_derecha', etiqueta: 'Lateral derecho', aspecto: '500 / 170', vw: 500, vh: 170 },
 ]
 
 const COLORES = [
@@ -113,16 +113,7 @@ export const InspeccionVehicular = forwardRef<InspeccionHandle, Props>(
         if (svg) {
           const xml = new XMLSerializer().serializeToString(svg)
           const imagen = await cargarImagen(`data:image/svg+xml;charset=utf-8,${encodeURIComponent(xml)}`)
-
-          if (celda.vista === 'lateral_derecha') {
-            ctx.save()
-            ctx.translate(rect.x + rect.w, rect.y)
-            ctx.scale(-1, 1)
-            ctx.drawImage(imagen, 0, 0, rect.w, rect.h)
-            ctx.restore()
-          } else {
-            ctx.drawImage(imagen, rect.x, rect.y, rect.w, rect.h)
-          }
+          ctx.drawImage(imagen, rect.x, rect.y, rect.w, rect.h)
         }
 
         const capa = lienzos.current[celda.vista]?.exportarCanvas()
@@ -186,7 +177,7 @@ export const InspeccionVehicular = forwardRef<InspeccionHandle, Props>(
 
     function tarjeta(config: ConfigVista) {
       return (
-        <div key={config.vista} className="rounded-xl border border-slate-300 bg-white p-2">
+        <div key={config.vista} className={`rounded-xl border border-slate-300 bg-white p-2 ${config.vista === 'superior' ? 'mx-auto w-full max-w-[200px]' : ''}`}>
           <div className="mb-1 flex items-center justify-between gap-2">
             <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-600">
               {config.etiqueta}
@@ -257,7 +248,7 @@ export const InspeccionVehicular = forwardRef<InspeccionHandle, Props>(
           </div>
         )}
 
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid items-start gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {tarjeta(VISTAS[0])}
           {tarjeta(VISTAS[1])}
           {tarjeta(VISTAS[2])}
