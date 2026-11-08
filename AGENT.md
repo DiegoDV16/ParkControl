@@ -1,81 +1,60 @@
 # Instrucciones para el agente de ParkControl
 
-Estas instrucciones están dirigidas a DeepSeek y a cualquier agente que
-desarrolle o mantenga este proyecto.
+Estas instrucciones están dirigidas a DeepSeek y a cualquier agente de IA o desarrollador que desarrolle, refactorice o mantenga este proyecto.
 
-## Contexto del proyecto
+---
 
-- ParkControl es un sistema de control de estacionamiento con interfaz y textos
-  en español.
-- El código actual está organizado como una aplicación PHP MVC clásica bajo
-  `app/`, con vistas en `app/views/`, recursos en `app/assets/` y conexión PDO
-  en `app/config/conexion.php`.
-- La base de datos prevista es MySQL, ejecutada localmente con XAMPP y
-  administrada con phpMyAdmin.
-- La documentación actual describe PHP clásico, no una aplicación Laravel.
-  Antes de usar Artisan, migraciones, Eloquent o componentes Laravel, verifica
-  que Composer y Laravel estén instalados. No presentes esos comandos como
-  disponibles si no lo están.
+## 1. Contexto y Arquitectura del Proyecto
 
-## Reglas de desarrollo
+- **ParkControl** es un sistema integral de gestión y control de estacionamientos en tiempo real, operado desde PC de escritorio y Tablets táctiles.
+- **Idioma:** Todos los textos de la interfaz, validaciones, comentarios y documentación deben mantenerse exclusivamente en **español**.
+- **Arquitectura:** Monolito desacoplado en dos capas principales:
+  - **Backend (API REST):** PHP 8.2+ con **Laravel**. Expone endpoints JSON limpios, gestiona la autenticación con **Laravel Sanctum**, aplica reglas de negocio y maneja el control de concurrencia.
+  - **Frontend (SPA):** **React** inicializado con **Vite**, **TypeScript**, **React Router** y estilizado con **Tailwind CSS**. Optimizado con áreas táctiles amplias para tablets en garita/terreno.
+  - **Base de Datos:** **MySQL / MariaDB** ejecutado localmente mediante **XAMPP** y administrado vía **phpMyAdmin**.
 
-- Escribe código compatible con PHP 8.2 o superior. Usa sintaxis moderna con
-  tipos cuando aporte claridad y comprueba la versión instalada antes de
-  ejecutar validaciones.
-- Respeta la estructura MVC y los patrones existentes. No migres el proyecto a
-  Laravel ni cambies su arquitectura sin una solicitud explícita.
-- Si se solicita desarrollar o migrar a Laravel, usa las convenciones del
-  framework: rutas, controladores, modelos, validación, middleware, Blade,
-  configuración por entorno y migraciones. Explica los cambios de estructura y
-  dependencias necesarios.
-- Accede a MySQL desde la aplicación mediante PDO o, si Laravel ya está
-  instalado, mediante sus componentes de base de datos. phpMyAdmin es una
-  herramienta administrativa; no lo uses como sustituto de validaciones,
-  consultas parametrizadas o migraciones versionadas.
-- Mantén textos, mensajes de interfaz y documentación para usuarios en español.
-- Conserva Bootstrap y los estilos propios `pc-` existentes, salvo que la tarea
-  pida un cambio de diseño.
-- Lee los archivos relacionados antes de editarlos. Evita cambios no
-  relacionados y conserva las convenciones de nombres y el comportamiento
-  existente.
+---
 
-## Seguridad y datos
+## 2. Reglas del Modelo de Datos (Esquema Relacional Estricto)
 
-- Nunca expongas, copies a la documentación ni confirmes credenciales.
-  Mantén secretos fuera del repositorio y usa configuración local o variables
-  de entorno según el patrón disponible.
-- Usa consultas preparadas; valida y normaliza entradas del usuario.
-- Escapa datos al renderizarlos en HTML y usa las protecciones CSRF y de sesión
-  apropiadas para el flujo existente o para Laravel.
-- No muestres errores internos, consultas SQL ni credenciales al usuario.
-- Para cambios en el esquema MySQL, conserva los datos y documenta la forma de
-  aplicar y revertir el cambio. Si Laravel está instalado, crea migraciones;
-  en caso contrario, proporciona SQL explícito y seguro para el entorno local.
+Queda **estrictamente prohibido el uso de campos JSON** para almacenar información del negocio. Todo dato debe persistir en columnas atómicas y tablas normalizadas mediante migraciones de Laravel.
 
-## Interfaz, Bootstrap y JavaScript
+### Estructura de Tablas:
+1. **`rol`**: `idRol` (PK), `rol`.
+2. **`usuario`**: `idUsuario` (PK), `idRol` (FK), `rut`, `nombres`, `apellidoPaterno`, `apellidoMaterno`, `correo`, `contrasena`.
+3. **`cliente`**: `idCliente` (PK), `rut`, `nombres`, `apellidoPaterno`, `apellidoMaterno`, `telefono`, `correo`.
+4. **`marca`**: `idMarca` (PK), `marca`.
+5. **`modelo`**: `idModelo` (PK), `idMarca` (FK), `modelo`.
+6. **`vehiculo`**: `idVehiculo` (PK), `patente`, `anio`, `color`, `idModelo` (FK).
+7. **`fila`**: `idFila` (PK), `fila`, `capacidadTotal`, `estado`. *(Nota: Los cupos no se numeran individualmente; se asignan por capacidad de fila, ej. Fila A: 16 cupos).*
+8. **`servicioextra`**: `idServicioExtra` (PK), `servicioExtra`.
+9. **`ingreso`**: `idIngreso` (PK), `idServicioExtra` (FK nullable), `idUsuario` (FK), `idVehiculo` (FK), `idFilaEstacionamiento` (FK -> `fila.idFila`), `idCliente` (FK), `fechaInicio` (date), `horaInicio` (time), `fechaTermino` (date nullable), `horaTermino` (time nullable), `numeroVuelo` (varchar nullable), `llaves` (boolean), `observacion` (text nullable).
+10. **`danio_vehiculo`**: `idDanio` (PK), `idIngreso` (FK), `coordX` (decimal(5,2)), `coordY` (decimal(5,2)), `tipoDanio` (varchar), `detalle` (varchar nullable).
+11. **`pago`**: `idPago` (PK), `idIngreso` (FK), `montoTotal` (int), `metodoPago` (varchar), `fechaHoraPago` (datetime).
 
-- Bootstrap 5 se sirve **desde el propio proyecto** en `app/assets/vendor/`
-  (CSS, JS e iconos). No agregues enlaces a CDN en las vistas nuevas.
-- Los CRUD de usuarios y clientes se resuelven con **modales de Bootstrap 5**
-  sobre el listado, no con páginas de formulario independientes. Usa el modal
-  reutilizable (`data-form-modal`) y el de confirmación (`data-confirmar`).
-- La lógica de interfaz vive en `app/assets/js/main.js`. Evita `onclick` y
-  scripts inline; declara el comportamiento con atributos `data-*`.
-- Toda acción destructiva o irreversible debe confirmarse en un modal, nunca
-  con `confirm()` del navegador.
-- Mantén accesibilidad básica: `aria-label`, `aria-hidden`, foco en el primer
-  campo al abrir un modal y cierre con la tecla Escape.
-- Reutiliza los componentes y utilidades de Bootstrap (`modal`, `alert`,
-  `dropdown`, `progress`, `table`) antes de crear CSS nuevo.
+---
 
-## Verificación
+## 3. Módulos y Control de Acceso (RBAC)
 
-- Usa Apache y MySQL de XAMPP para probar flujos que dependan del servidor o de
-  la base de datos. No des por válida una prueba que solo comprueba que un
-  archivo existe.
-- Ejecuta las pruebas o comprobaciones disponibles en el repositorio. Si no
-  hay pruebas automatizadas o herramientas configuradas, indícalo y valida
-  manualmente las rutas afectadas cuando sea posible.
-- No ejecutes migraciones destructivas ni borres datos locales.
-- Actualiza `README.md` cuando cambien los pasos de instalación, configuración
-  o ejecución.
+El sistema opera con tres perfiles delimitados mediante middlewares en Laravel y rutas protegidas en React Router:
+
+1. **Operador (Optimizado para Tablet táctil):**
+   - Registro ágil de entrada/salida de vehículos y clientes.
+   - Selector visual de filas con barras de ocupación en tiempo real (`ocupados / capacidadTotal`).
+   - Módulo de inspección gráfica sobre silueta vehicular: captura toques táctiles, calcula coordenadas relativas en porcentaje (`coordX`, `coordY`) y las asocia a `danio_vehiculo`.
+2. **Jefatura (Dashboard de Supervisión - Solo Lectura):**
+   - Monitoreo en vivo de capacidad y porcentaje de ocupación por fila.
+   - Métrica en tiempo real de recaudación total diaria basada en la tabla `pago`.
+   - Bloqueo total de acciones de edición o eliminación de registros.
+3. **Administrador:**
+   - CRUD integral de usuarios y asignación de roles.
+   - Configuración de filas: alta, baja lógica y ajuste de capacidades máximas.
+
+---
+
+## 4. Reglas de Desarrollo Backend (Laravel & PHP)
+
+- Escribe código compatible con **PHP 8.2+** utilizando tipado estricto, Form Requests para validación y Resources para la respuesta de la API.
+- **Control de Concurrencia Obligatorio:** En la asignación de filas, nunca asumas disponibilidad con un simple conteo. Implementa transacciones con bloqueo pesimista (`DB::transaction` y `lockForUpdate()`) para impedir sobrecupo si dos operadores asignan en simultáneo:
+  ```php
+  $fila = Fila::where('idFila',$filaId)->lockForUpdate()->first();
