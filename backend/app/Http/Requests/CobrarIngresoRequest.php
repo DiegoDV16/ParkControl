@@ -19,8 +19,7 @@ class CobrarIngresoRequest extends FormRequest
         return [
             'fechaRegreso' => ['required', 'date'],
             'horaRegreso' => ['required', 'date_format:H:i'],
-            'metodo' => ['required', 'in:efectivo,debito,credito,transferencia'],
-            'montoRecibido' => ['nullable', 'numeric', 'min:0'],
+            'metodo' => ['required', 'in:debito,credito,transferencia'],
             'referencia' => ['nullable', 'string', 'max:50'],
         ];
     }

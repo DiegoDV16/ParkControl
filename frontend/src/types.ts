@@ -127,8 +127,7 @@ export interface PreviewCobro {
 export interface CobroPayload {
   fechaRegreso: string
   horaRegreso: string
-  metodo: 'efectivo' | 'debito' | 'credito' | 'transferencia'
-  montoRecibido?: number | null
+  metodo: 'debito' | 'credito' | 'transferencia'
   referencia?: string | null
 }
 
