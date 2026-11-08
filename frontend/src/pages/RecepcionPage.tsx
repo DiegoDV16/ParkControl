@@ -2,15 +2,17 @@ import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import { useAuth } from '../auth/AuthContext'
 import { CobroModal } from '../components/CobroModal'
 import { DaniosModal } from '../components/DaniosModal'
+import { DaniosBorradorModal } from '../components/DaniosBorradorModal'
 import {
   ApiError,
+  crearDanio,
   crearIngreso,
   estimarIngreso,
   listarFilas,
   listarIngresos,
   obtenerCatalogos,
 } from '../lib/api'
-import type { Catalogos, Fila, IngresoResumen } from '../types'
+import type { Catalogos, Danio, Fila, IngresoResumen } from '../types'
 
 function mensajeDeError(fallo: unknown): string {
   if (fallo instanceof ApiError) {
@@ -80,6 +82,8 @@ export function RecepcionPage() {
   const [estimacion, setEstimacion] = useState<{ dias: number; monto: number } | null>(null)
   const [cobro, setCobro] = useState<IngresoResumen | null>(null)
   const [danios, setDanios] = useState<IngresoResumen | null>(null)
+  const [borrador, setBorrador] = useState<Danio[]>([])
+  const [abrirBorrador, setAbrirBorrador] = useState(false)
 
   const cargar = useCallback(async () => {
     setCargando(true)
@@ -187,6 +191,16 @@ export function RecepcionPage() {
         `Ingreso #${respuesta.data.idIngreso} registrado para ${respuesta.data.vehiculo.patente} `
         + `en la fila ${respuesta.data.fila}. Monto proyectado: $${respuesta.data.montoProyectado.toLocaleString('es-CL')}.`,
       )
+      for (const danio of borrador) {
+        await crearDanio(respuesta.data.idIngreso, {
+          vista: danio.vista,
+          coordX: danio.coordX,
+          coordY: danio.coordY,
+          tipoDanio: danio.tipoDanio,
+          detalle: danio.detalle,
+        })
+      }
+      setBorrador([])
       setForm(formularioInicial())
       setDanios(respuesta.data)
       await cargar()
@@ -379,6 +393,14 @@ export function RecepcionPage() {
             )}
           </section>
 
+          <div className="flex flex-wrap items-center gap-3 rounded-lg border border-pc-border bg-pc-panel2/40 px-4 py-3">
+            <button type="button" className="pc-btn-ghost" onClick={() => setAbrirBorrador(true)}>
+              Inspección de daños{borrador.length > 0 ? ` (${borrador.length})` : ''}
+            </button>
+            <span className="text-xs text-pc-muted">
+              Marca los daños antes de registrar; se guardan junto con el ingreso.
+            </span>
+          </div>
           <div className="text-sm">
             {estimacion ? (
               <>
@@ -393,7 +415,7 @@ export function RecepcionPage() {
             <button
               type="button"
               className="pc-btn-ghost"
-              onClick={() => { setForm(formularioInicial()); setEstimacion(null) }}
+              onClick={() => { setForm(formularioInicial()); setEstimacion(null); setBorrador([]) }}
               disabled={enviando}
             >
               Limpiar
@@ -500,6 +522,14 @@ export function RecepcionPage() {
           ingreso={danios}
           soloLectura={esJefatura}
           onCerrar={() => setDanios(null)}
+        />
+      )}
+
+      {abrirBorrador && (
+        <DaniosBorradorModal
+          danios={borrador}
+          onCambiar={setBorrador}
+          onCerrar={() => setAbrirBorrador(false)}
         />
       )}
     </div>
