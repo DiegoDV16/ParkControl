@@ -1,18 +1,22 @@
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { InspeccionVehicular } from '../components/inspeccion/InspeccionVehicular'
-import type { InspeccionExportada } from '../components/inspeccion/tipos'
-import { ApiError, listarIngresos, subirInspeccion } from '../lib/api'
-import type { IngresoResumen } from '../types'
+import { FotosVehiculo } from '../components/inspeccion/FotosVehiculo'
+import {
+  ApiError,
+  eliminarFotoInspeccion,
+  listarIngresos,
+  subirFotoInspeccion,
+} from '../lib/api'
+import type { FotoInspeccion, IngresoResumen } from '../types'
 
 export function InspeccionPage() {
   const [parametros] = useSearchParams()
   const [ingresos, setIngresos] = useState<IngresoResumen[]>([])
   const [idSeleccionado, setIdSeleccionado] = useState('')
   const [cargando, setCargando] = useState(true)
+  const [guardando, setGuardando] = useState(false)
   const [mensaje, setMensaje] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [redibujar, setRedibujar] = useState(false)
 
   useEffect(() => {
     listarIngresos()
@@ -30,32 +34,54 @@ export function InspeccionPage() {
         setError(fallo instanceof ApiError ? fallo.message : 'No se pudieron cargar los vehículos.')
       })
       .finally(() => setCargando(false))
-  }, [])
+  }, [parametros])
 
   const seleccionado = ingresos.find((ingreso) => String(ingreso.idIngreso) === idSeleccionado) ?? null
+  const fotos: FotoInspeccion[] = seleccionado?.inspeccionFotos ?? []
 
-  async function guardar(resultado: InspeccionExportada) {
+  function actualizarFotos(idIngreso: number, nuevas: FotoInspeccion[]) {
+    setIngresos((previos) => previos.map((ingreso) => (
+      ingreso.idIngreso === idIngreso ? { ...ingreso, inspeccionFotos: nuevas } : ingreso
+    )))
+  }
+
+  async function agregar(archivos: File[]) {
+    if (!seleccionado) return
+
+    setGuardando(true)
+    setMensaje(null)
+    setError(null)
+
+    try {
+      const subidas: FotoInspeccion[] = []
+      for (const archivo of archivos) {
+        const respuesta = await subirFotoInspeccion(seleccionado.idIngreso, archivo)
+        subidas.push(respuesta.data)
+      }
+      actualizarFotos(seleccionado.idIngreso, [...fotos, ...subidas])
+      setMensaje(`${subidas.length} fotografía(s) guardada(s).`)
+    } catch (fallo) {
+      setError(fallo instanceof ApiError ? fallo.message : 'No se pudieron subir las fotografías.')
+    } finally {
+      setGuardando(false)
+    }
+  }
+
+  async function eliminar(idFoto: number) {
     if (!seleccionado) return
 
     setMensaje(null)
     setError(null)
 
     try {
-      const respuesta = await subirInspeccion(
+      await eliminarFotoInspeccion(idFoto)
+      actualizarFotos(
         seleccionado.idIngreso,
-        resultado.blob,
-        resultado.sinDanios,
+        fotos.filter((foto) => foto.idFoto !== idFoto),
       )
-      setMensaje(respuesta.message)
-      setRedibujar(false)
-      setIngresos((previos) => previos.map((ingreso) => (
-        ingreso.idIngreso === seleccionado.idIngreso
-          ? { ...ingreso, inspeccionUrl: respuesta.url, inspeccionSinDanios: resultado.sinDanios }
-          : ingreso
-      )))
+      setMensaje('Fotografía eliminada.')
     } catch (fallo) {
-      setError(fallo instanceof ApiError ? fallo.message : 'No se pudo guardar la inspección.')
-      throw fallo
+      setError(fallo instanceof ApiError ? fallo.message : 'No se pudo eliminar la fotografía.')
     }
   }
 
@@ -65,7 +91,7 @@ export function InspeccionPage() {
         <div>
           <h1 className="text-xl font-bold">Inspección vehicular</h1>
           <p className="text-sm text-pc-muted">
-            Marca los daños con el dedo o lápiz sobre el esquema del vehículo.
+            Registra fotografías del estado del vehículo al ingreso.
           </p>
         </div>
 
@@ -78,7 +104,6 @@ export function InspeccionPage() {
             disabled={cargando || ingresos.length === 0}
             onChange={(evento) => {
               setIdSeleccionado(evento.target.value)
-              setRedibujar(false)
               setMensaje(null)
               setError(null)
             }}
@@ -104,32 +129,19 @@ export function InspeccionPage() {
         </div>
       )}
 
-      {!seleccionado && !cargando && (
+      {!seleccionado && !cargando ? (
         <div className="pc-card p-6 text-sm text-pc-muted">
           No hay vehículos activos. Registra un ingreso en Recepción para inspeccionarlo.
         </div>
-      )}
-
-      {seleccionado && seleccionado.inspeccionUrl && !redibujar && (
-        <div className="space-y-3">
-          <div className="pc-card overflow-hidden">
-            <img
-              src={seleccionado.inspeccionUrl}
-              alt={`Inspección de ${seleccionado.vehiculo.patente}`}
-              className="mx-auto block max-h-[70vh] w-auto"
-            />
-          </div>
-          <div className="flex justify-end gap-2">
-            <button type="button" className="pc-btn-ghost" onClick={() => setRedibujar(true)}>
-              Volver a inspeccionar
-            </button>
-          </div>
-        </div>
-      )}
-
-      {seleccionado && (!seleccionado.inspeccionUrl || redibujar) && (
-        <InspeccionVehicular key={seleccionado.idIngreso} onGuardar={guardar} />
-      )}
+      ) : seleccionado ? (
+        <FotosVehiculo
+          fotos={fotos}
+          onAgregar={(archivos) => void agregar(archivos)}
+          onEliminar={(idFoto) => void eliminar(idFoto)}
+          guardando={guardando}
+          nota="Las fotografías se guardan de inmediato en el servidor."
+        />
+      ) : null}
     </div>
   )
 }

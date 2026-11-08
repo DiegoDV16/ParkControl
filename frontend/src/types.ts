@@ -96,6 +96,11 @@ export interface Danio {
   detalle: string | null
 }
 
+export interface FotoInspeccion {
+  idFoto: number
+  url: string
+}
+
 export interface IngresoResumen {
   idIngreso: number
   estado: string
@@ -114,6 +119,7 @@ export interface IngresoResumen {
   danios?: Danio[]
   inspeccionUrl?: string | null
   inspeccionSinDanios?: boolean
+  inspeccionFotos?: FotoInspeccion[]
 }
 
 export interface IngresoPayload {

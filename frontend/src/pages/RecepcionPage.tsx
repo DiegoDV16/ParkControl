@@ -2,8 +2,7 @@ import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
 import { CobroModal } from '../components/CobroModal'
-import { InspeccionVehicular } from '../components/inspeccion/InspeccionVehicular'
-import type { InspeccionExportada } from '../components/inspeccion/tipos'
+import { FotosVehiculo, type FotoPendiente } from '../components/inspeccion/FotosVehiculo'
 import {
   ApiError,
   crearIngreso,
@@ -11,7 +10,7 @@ import {
   listarFilas,
   listarIngresos,
   obtenerCatalogos,
-  subirInspeccion,
+  subirFotoInspeccion,
 } from '../lib/api'
 import type { Catalogos, Fila, IngresoResumen } from '../types'
 
@@ -83,8 +82,8 @@ export function RecepcionPage() {
   const [form, setForm] = useState(formularioInicial())
   const [estimacion, setEstimacion] = useState<{ dias: number; monto: number } | null>(null)
   const [cobro, setCobro] = useState<IngresoResumen | null>(null)
-  const [inspeccion, setInspeccion] = useState<InspeccionExportada | null>(null)
-  const [abrirInspeccion, setAbrirInspeccion] = useState(false)
+  const [fotos, setFotos] = useState<FotoPendiente[]>([])
+  const [abrirFotos, setAbrirFotos] = useState(false)
 
   const cargar = useCallback(async () => {
     setCargando(true)
@@ -160,6 +159,30 @@ export function RecepcionPage() {
     (servicio) => String(servicio.idServicioExtra) === form.idServicioExtra,
   )
 
+  function agregarFotos(archivos: File[]) {
+    const nuevas = archivos.map((archivo) => ({
+      id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      archivo,
+      url: URL.createObjectURL(archivo),
+    }))
+    setFotos((previas) => [...previas, ...nuevas])
+  }
+
+  function quitarFoto(id: string) {
+    setFotos((previas) => {
+      const foto = previas.find((item) => item.id === id)
+      if (foto) URL.revokeObjectURL(foto.url)
+      return previas.filter((item) => item.id !== id)
+    })
+  }
+
+  function limpiarFotos() {
+    setFotos((previas) => {
+      previas.forEach((foto) => URL.revokeObjectURL(foto.url))
+      return []
+    })
+  }
+
   async function enviar(evento: FormEvent<HTMLFormElement>) {
     evento.preventDefault()
     setEnviando(true)
@@ -189,20 +212,26 @@ export function RecepcionPage() {
       })
 
       let aviso = ''
-      if (inspeccion) {
-        try {
-          await subirInspeccion(respuesta.data.idIngreso, inspeccion.blob, inspeccion.sinDanios)
-          aviso = ' Inspección guardada.'
-        } catch {
-          aviso = ' El ingreso se registró, pero la inspección no se pudo guardar.'
+      if (fotos.length > 0) {
+        let subidas = 0
+        for (const foto of fotos) {
+          try {
+            await subirFotoInspeccion(respuesta.data.idIngreso, foto.archivo)
+            subidas += 1
+          } catch {
+            // Se informa al final cuántas fotografías se guardaron.
+          }
         }
+        aviso = subidas === fotos.length
+          ? ` ${subidas} fotografía(s) guardada(s).`
+          : ` Se guardaron ${subidas} de ${fotos.length} fotografías.`
+        limpiarFotos()
       }
 
       setOk(
         `Ingreso #${respuesta.data.idIngreso} registrado para ${respuesta.data.vehiculo.patente} `
         + `en la fila ${respuesta.data.fila}. Monto proyectado: $${respuesta.data.montoProyectado.toLocaleString('es-CL')}.${aviso}`,
       )
-      setInspeccion(null)
       setForm(formularioInicial())
       await cargar()
     } catch (fallo) {
@@ -395,15 +424,13 @@ export function RecepcionPage() {
           </section>
 
           <div className="flex flex-wrap items-center gap-3 rounded-lg border border-pc-border bg-pc-panel2/40 px-4 py-3">
-            <button type="button" className="pc-btn-ghost" onClick={() => setAbrirInspeccion(true)}>
-              Inspección de daños
+            <button type="button" className="pc-btn-ghost" onClick={() => setAbrirFotos(true)}>
+              Fotografías del vehículo
             </button>
             <span className="text-xs text-pc-muted">
-              {inspeccion
-                ? (inspeccion.sinDanios
-                  ? 'Inspección marcada sin daños visibles.'
-                  : 'Inspección capturada con daños.')
-                : 'Dibuja los daños antes de registrar; se guardan junto con el ingreso.'}
+              {fotos.length > 0
+                ? `${fotos.length} fotografía(s) pendiente(s) de guardar.`
+                : 'Toma fotos del estado del vehículo antes de registrar; se suben con el ingreso.'}
             </span>
           </div>
           <div className="text-sm">
@@ -420,7 +447,7 @@ export function RecepcionPage() {
             <button
               type="button"
               className="pc-btn-ghost"
-              onClick={() => { setForm(formularioInicial()); setEstimacion(null); setInspeccion(null) }}
+              onClick={() => { setForm(formularioInicial()); setEstimacion(null); limpiarFotos() }}
               disabled={enviando}
             >
               Limpiar
@@ -486,7 +513,7 @@ export function RecepcionPage() {
                       className="pc-btn-ghost mt-1 px-2 text-xs"
                       onClick={() => navegar(`/inspeccion?ingreso=${ingreso.idIngreso}`)}
                     >
-                      Inspección
+                      Fotos
                     </button>
                     {!esJefatura && (
                       <button
@@ -506,8 +533,8 @@ export function RecepcionPage() {
       </section>
 
       <p className="text-xs text-pc-muted">
-        La ficha de inspección se abre desde el formulario o con el botón Inspección. El cobro registra
-        la llegada real y libera la fila.
+        Las fotografías se toman desde el formulario o con el botón Fotos. El cobro registra la
+        llegada real y libera la fila.
       </p>
 
       {cobro && (
@@ -522,33 +549,31 @@ export function RecepcionPage() {
         />
       )}
 
-      {abrirInspeccion && (
+      {abrirFotos && (
         <div className="fixed inset-0 z-50 overflow-y-auto bg-pc-bg">
-          <div className="mx-auto w-full max-w-6xl px-4 py-5">
+          <div className="mx-auto w-full max-w-4xl px-4 py-5">
             <div className="mb-4 flex items-start justify-between gap-3">
               <div>
-                <h2 className="text-lg font-bold">Inspección de daños</h2>
+                <h2 className="text-lg font-bold">Fotografías del vehículo</h2>
                 <p className="text-sm text-pc-muted">
-                  Marca los daños sobre el vehículo; se guardarán al registrar el ingreso.
+                  Toma fotos del estado actual; se subirán al registrar el ingreso.
                 </p>
               </div>
               <button
                 type="button"
                 className="pc-btn-ghost"
-                onClick={() => setAbrirInspeccion(false)}
+                onClick={() => setAbrirFotos(false)}
               >
                 Cerrar ✕
               </button>
             </div>
 
-            <InspeccionVehicular
-              onGuardar={(resultado) => {
-                setInspeccion(resultado)
-                setAbrirInspeccion(false)
-                setOk(resultado.sinDanios
-                  ? 'Inspección capturada: sin daños visibles.'
-                  : 'Inspección capturada con daños.')
-              }}
+            <FotosVehiculo
+              fotos={[]}
+              pendientes={fotos}
+              onAgregar={agregarFotos}
+              onQuitarPendiente={quitarFoto}
+              nota="Máximo 8 MB por fotografía. Se guardan en el servidor al confirmar el ingreso."
             />
           </div>
         </div>

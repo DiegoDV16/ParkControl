@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CatalogoController;
 use App\Http\Controllers\Api\DanioController;
 use App\Http\Controllers\Api\FilaController;
+use App\Http\Controllers\Api\FotoInspeccionController;
 use App\Http\Controllers\Api\IngresoController;
 use App\Http\Controllers\Api\InspeccionController;
 use App\Http\Controllers\Api\PerfilController;
@@ -31,6 +32,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::get('/ingresos/estimar', [IngresoController::class, 'estimar']);
     Route::get('/ingresos/{ingreso}/preview', [IngresoController::class, 'preview']);
     Route::get('/ingresos/{ingreso}/danios', [DanioController::class, 'index']);
+    Route::get('/ingresos/{ingreso}/fotos', [FotoInspeccionController::class, 'index']);
     Route::get('/ingresos/{ingreso}', [IngresoController::class, 'show']);
 });
 
@@ -38,6 +40,8 @@ Route::middleware(['auth:sanctum', 'role:ADMINISTRADOR,OPERADOR'])->group(functi
     Route::post('/ingresos', [IngresoController::class, 'store']);
     Route::post('/ingresos/{ingreso}/cobrar', [IngresoController::class, 'cobrar']);
     Route::post('/ingresos/{ingreso}/inspeccion', [InspeccionController::class, 'store']);
+    Route::post('/ingresos/{ingreso}/fotos', [FotoInspeccionController::class, 'store']);
+    Route::delete('/inspeccion-fotos/{foto}', [FotoInspeccionController::class, 'destroy']);
     Route::post('/ingresos/{ingreso}/danios', [DanioController::class, 'store']);
     Route::put('/danios/{danio}', [DanioController::class, 'update']);
     Route::delete('/danios/{danio}', [DanioController::class, 'destroy']);
