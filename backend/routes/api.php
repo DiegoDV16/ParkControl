@@ -1,7 +1,9 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\CatalogoController;
 use App\Http\Controllers\Api\FilaController;
+use App\Http\Controllers\Api\IngresoController;
 use App\Http\Controllers\Api\PerfilController;
 use App\Http\Controllers\Api\RolController;
 use App\Http\Controllers\Api\UsuarioController;
@@ -21,6 +23,14 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::put('/perfil/password', [PerfilController::class, 'password']);
 
     Route::get('/filas', [FilaController::class, 'index']);
+
+    Route::get('/catalogos', [CatalogoController::class, 'index']);
+    Route::get('/ingresos', [IngresoController::class, 'index']);
+    Route::get('/ingresos/{ingreso}', [IngresoController::class, 'show']);
+});
+
+Route::middleware(['auth:sanctum', 'role:ADMINISTRADOR,OPERADOR'])->group(function (): void {
+    Route::post('/ingresos', [IngresoController::class, 'store']);
 });
 
 Route::middleware(['auth:sanctum', 'role:ADMINISTRADOR'])->group(function (): void {
