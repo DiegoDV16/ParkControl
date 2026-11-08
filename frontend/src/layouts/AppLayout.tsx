@@ -17,7 +17,7 @@ const menu = [
   { clave: 'inicio', texto: 'Inicio', ruta: '/', disponible: true },
   { clave: 'usuarios', texto: 'Usuarios', ruta: '/usuarios', disponible: true },
   { clave: 'recepcion', texto: 'Recepción en patio', ruta: '/recepcion', disponible: false },
-  { clave: 'filas', texto: 'Filas y ocupación', ruta: '/filas', disponible: false },
+  { clave: 'filas', texto: 'Filas y ocupación', ruta: '/filas', disponible: true },
   { clave: 'clientes', texto: 'Clientes', ruta: '/clientes', disponible: false },
   { clave: 'reportes', texto: 'Supervisión', ruta: '/reportes', disponible: false },
   { clave: 'perfil', texto: 'Mi perfil', ruta: '/perfil', disponible: true },

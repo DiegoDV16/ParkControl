@@ -43,6 +43,15 @@ export interface PerfilPayload {
   apellidoMaterno?: string | null
 }
 
+export interface Fila {
+  idFila: number
+  fila: string
+  capacidadTotal: number
+  estado: number
+  ocupadas: number
+  libres: number
+}
+
 export interface UsuarioPayload {
   idRol: number
   rut: string

@@ -1,4 +1,5 @@
 import type {
+  Fila,
   LoginResponse,
   Paginated,
   PerfilPayload,
@@ -146,6 +147,20 @@ export function cambiarContrasenaPerfil(datos: {
   return request<{ message: string }>('/perfil/password', {
     method: 'PUT',
     body: JSON.stringify(datos),
+  })
+}
+
+export function listarFilas(): Promise<{ data: Fila[] }> {
+  return request<{ data: Fila[] }>('/filas')
+}
+
+export function actualizarFila(
+  id: number,
+  capacidadTotal: number,
+): Promise<{ data: Fila; message: string }> {
+  return request<{ data: Fila; message: string }>(`/filas/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify({ capacidadTotal }),
   })
 }
 

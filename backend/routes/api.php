@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\FilaController;
 use App\Http\Controllers\Api\PerfilController;
 use App\Http\Controllers\Api\RolController;
 use App\Http\Controllers\Api\UsuarioController;
@@ -18,10 +19,13 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::get('/perfil', [PerfilController::class, 'show']);
     Route::put('/perfil', [PerfilController::class, 'update']);
     Route::put('/perfil/password', [PerfilController::class, 'password']);
+
+    Route::get('/filas', [FilaController::class, 'index']);
 });
 
 Route::middleware(['auth:sanctum', 'role:ADMINISTRADOR'])->group(function (): void {
     Route::get('/roles', [RolController::class, 'index']);
+    Route::put('/filas/{fila}', [FilaController::class, 'update']);
     Route::get('/usuarios', [UsuarioController::class, 'index']);
     Route::post('/usuarios', [UsuarioController::class, 'store']);
     Route::put('/usuarios/{usuario}', [UsuarioController::class, 'update']);
