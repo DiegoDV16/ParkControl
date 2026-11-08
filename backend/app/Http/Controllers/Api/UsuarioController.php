@@ -117,10 +117,12 @@ class UsuarioController extends Controller
         }
 
         $ingresos = DB::table('ingreso')->where('idUsuario', $usuario->idUsuario)->count();
+        $pagos = DB::table('pago')->where('idUsuario', $usuario->idUsuario)->count();
 
-        if ($ingresos > 0) {
+        if (($ingresos > 0 || $pagos > 0) && ! $request->boolean('force')) {
             return response()->json([
-                'message' => 'El usuario tiene ingresos registrados. Desactívalo en lugar de eliminarlo.',
+                'message' => 'El usuario tiene ingresos o pagos registrados. Confirma la eliminación forzada para conservar el historial sin usuario.',
+                'requiere_confirmacion' => true,
             ], 409);
         }
 

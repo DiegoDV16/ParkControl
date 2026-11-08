@@ -210,7 +210,7 @@ export function UsuariosPage() {
 
     try {
       if (confirmar.tipo === 'eliminar') {
-        await eliminarUsuario(confirmar.usuario.idUsuario)
+        await eliminarUsuario(confirmar.usuario.idUsuario, true)
       } else {
         await cambiarEstadoUsuario(
           confirmar.usuario.idUsuario,
@@ -405,7 +405,7 @@ export function UsuariosPage() {
             )}
             <p className="text-sm text-pc-muted">
               {confirmar.tipo === 'eliminar'
-                ? `Se eliminará permanentemente a ${confirmar.usuario.nombres} ${confirmar.usuario.apellidoPaterno}. Esta acción no se puede deshacer.`
+                ? `Se eliminará permanentemente a ${confirmar.usuario.nombres} ${confirmar.usuario.apellidoPaterno}. Sus ingresos y pagos se conservarán en el historial sin usuario asociado. Esta acción no se puede deshacer.`
                 : `Se ${confirmar.usuario.estado === 1 ? 'desactivará' : 'activará'} la cuenta de ${confirmar.usuario.nombres} ${confirmar.usuario.apellidoPaterno}.`}
             </p>
             <div className="flex justify-end gap-2">

@@ -130,6 +130,8 @@ export function cambiarEstadoUsuario(id: number, estado: number): Promise<{ data
   })
 }
 
-export function eliminarUsuario(id: number): Promise<{ message: string }> {
-  return request<{ message: string }>(`/usuarios/${id}`, { method: 'DELETE' })
+export function eliminarUsuario(id: number, forzar = false): Promise<{ message: string }> {
+  return request<{ message: string }>(`/usuarios/${id}${forzar ? '?force=1' : ''}`, {
+    method: 'DELETE',
+  })
 }
