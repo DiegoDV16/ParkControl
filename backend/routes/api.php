@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\PerfilController;
 use App\Http\Controllers\Api\RolController;
 use App\Http\Controllers\Api\UsuarioController;
 use Illuminate\Support\Facades\Route;
@@ -13,6 +14,10 @@ Route::get('/login', fn () => response()->json(['message' => 'No autenticado.'],
 Route::middleware('auth:sanctum')->group(function (): void {
     Route::get('/user', [AuthController::class, 'user']);
     Route::post('/logout', [AuthController::class, 'logout']);
+
+    Route::get('/perfil', [PerfilController::class, 'show']);
+    Route::put('/perfil', [PerfilController::class, 'update']);
+    Route::put('/perfil/password', [PerfilController::class, 'password']);
 });
 
 Route::middleware(['auth:sanctum', 'role:ADMINISTRADOR'])->group(function (): void {
