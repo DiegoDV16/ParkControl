@@ -2,7 +2,6 @@ import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
 import { CobroModal } from '../components/CobroModal'
-import { Modal } from '../components/Modal'
 import { InspeccionVehicular } from '../components/inspeccion/InspeccionVehicular'
 import type { InspeccionExportada } from '../components/inspeccion/tipos'
 import {
@@ -524,22 +523,35 @@ export function RecepcionPage() {
       )}
 
       {abrirInspeccion && (
-        <Modal
-          abierto
-          titulo="Inspección de daños"
-          onCerrar={() => setAbrirInspeccion(false)}
-          ancho="max-w-6xl"
-        >
-          <InspeccionVehicular
-            onGuardar={(resultado) => {
-              setInspeccion(resultado)
-              setAbrirInspeccion(false)
-              setOk(resultado.sinDanios
-                ? 'Inspección capturada: sin daños visibles.'
-                : 'Inspección capturada con daños.')
-            }}
-          />
-        </Modal>
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-pc-bg">
+          <div className="mx-auto w-full max-w-6xl px-4 py-5">
+            <div className="mb-4 flex items-start justify-between gap-3">
+              <div>
+                <h2 className="text-lg font-bold">Inspección de daños</h2>
+                <p className="text-sm text-pc-muted">
+                  Marca los daños sobre el vehículo; se guardarán al registrar el ingreso.
+                </p>
+              </div>
+              <button
+                type="button"
+                className="pc-btn-ghost"
+                onClick={() => setAbrirInspeccion(false)}
+              >
+                Cerrar ✕
+              </button>
+            </div>
+
+            <InspeccionVehicular
+              onGuardar={(resultado) => {
+                setInspeccion(resultado)
+                setAbrirInspeccion(false)
+                setOk(resultado.sinDanios
+                  ? 'Inspección capturada: sin daños visibles.'
+                  : 'Inspección capturada con daños.')
+              }}
+            />
+          </div>
+        </div>
       )}
     </div>
   )
