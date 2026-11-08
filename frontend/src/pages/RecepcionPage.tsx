@@ -3,6 +3,7 @@ import { useAuth } from '../auth/AuthContext'
 import {
   ApiError,
   crearIngreso,
+  estimarIngreso,
   listarFilas,
   listarIngresos,
   obtenerCatalogos,
@@ -26,6 +27,16 @@ function fechaHoy(): string {
 
 function horaAhora(): string {
   return new Date().toTimeString().slice(0, 5)
+}
+
+function normalizarRut(valor: string): string {
+  const limpio = valor.replace(/[^0-9kK]/g, '').toUpperCase()
+  if (limpio.length < 2) return limpio
+
+  const cuerpo = limpio.slice(0, -1)
+  const dv = limpio.slice(-1)
+
+  return `${cuerpo.replace(/\B(?=(\d{3})+(?!\d))/g, '.')}-${dv}`
 }
 
 function formularioInicial() {
@@ -64,6 +75,7 @@ export function RecepcionPage() {
   const [ok, setOk] = useState<string | null>(null)
   const [enviando, setEnviando] = useState(false)
   const [form, setForm] = useState(formularioInicial())
+  const [estimacion, setEstimacion] = useState<{ dias: number; monto: number } | null>(null)
 
   const cargar = useCallback(async () => {
     setCargando(true)
@@ -88,6 +100,43 @@ export function RecepcionPage() {
   useEffect(() => {
     void cargar()
   }, [cargar])
+
+  useEffect(() => {
+    if (!form.idTipoVehiculo || !catalogos) {
+      setEstimacion(null)
+      return
+    }
+
+    const tipo = catalogos.tipos.find(
+      (item) => String(item.idTipoVehiculo) === form.idTipoVehiculo,
+    )?.tipoVehiculo
+    const servicio = catalogos.servicios.find(
+      (item) => String(item.idServicioExtra) === form.idServicioExtra,
+    )?.servicioExtra
+
+    const temporizador = window.setTimeout(() => {
+      estimarIngreso({
+        tipo,
+        servicio,
+        fechaInicio: form.fechaInicio,
+        horaInicio: form.horaInicio,
+        fechaRegreso: form.fechaRegreso || undefined,
+        horaRegreso: form.horaRegreso || undefined,
+      })
+        .then((respuesta) => setEstimacion({ dias: respuesta.dias, monto: respuesta.monto }))
+        .catch(() => setEstimacion(null))
+    }, 350)
+
+    return () => window.clearTimeout(temporizador)
+  }, [
+    catalogos,
+    form.idTipoVehiculo,
+    form.idServicioExtra,
+    form.fechaInicio,
+    form.horaInicio,
+    form.fechaRegreso,
+    form.horaRegreso,
+  ])
 
   function campo<K extends keyof ReturnType<typeof formularioInicial>>(
     nombre: K,
@@ -175,7 +224,8 @@ export function RecepcionPage() {
               <div>
                 <label htmlFor="rRut" className="pc-label">RUT *</label>
                 <input id="rRut" className="pc-input" maxLength={13} required value={form.rut}
-                  onChange={(evento) => campo('rut', evento.target.value)} placeholder="12.345.678-9" />
+                  onChange={(evento) => campo('rut', evento.target.value)}
+                  onBlur={() => campo('rut', normalizarRut(form.rut))} placeholder="12.345.678-9" />
               </div>
               <div>
                 <label htmlFor="rNombres" className="pc-label">Nombres *</label>
@@ -211,7 +261,7 @@ export function RecepcionPage() {
               <div>
                 <label htmlFor="rPatente" className="pc-label">Patente *</label>
                 <input id="rPatente" className="pc-input text-uppercase" maxLength={7} required value={form.patente}
-                  onChange={(evento) => campo('patente', evento.target.value)} placeholder="BBBB12" />
+                  onChange={(evento) => campo('patente', evento.target.value.toUpperCase())} placeholder="BBBB12" />
               </div>
               <div>
                 <label htmlFor="rMarca" className="pc-label">Marca *</label>
@@ -324,7 +374,25 @@ export function RecepcionPage() {
             )}
           </section>
 
-          <div className="flex justify-end border-t border-pc-border pt-4">
+          <div className="text-sm">
+            {estimacion ? (
+              <>
+                Estimación: <strong>{estimacion.dias} día(s)</strong> ·{' '}
+                <strong className="text-pc-mint">${estimacion.monto.toLocaleString('es-CL')}</strong>
+              </>
+            ) : (
+              <span className="text-pc-muted">Selecciona tipo de vehículo y fechas para estimar.</span>
+            )}
+          </div>
+          <div className="flex justify-end gap-2 border-t border-pc-border pt-4">
+            <button
+              type="button"
+              className="pc-btn-ghost"
+              onClick={() => { setForm(formularioInicial()); setEstimacion(null) }}
+              disabled={enviando}
+            >
+              Limpiar
+            </button>
             <button type="submit" className="pc-btn-primary" disabled={enviando}>
               {enviando ? 'Registrando…' : 'Registrar ingreso'}
             </button>

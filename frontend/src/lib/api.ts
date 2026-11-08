@@ -175,6 +175,19 @@ export function listarIngresos(): Promise<Paginated<IngresoResumen>> {
   return request<Paginated<IngresoResumen>>('/ingresos')
 }
 
+export function estimarIngreso(params: {
+  tipo?: string
+  servicio?: string
+  fechaInicio: string
+  horaInicio: string
+  fechaRegreso?: string
+  horaRegreso?: string
+}): Promise<{ minutos: number; dias: number; monto: number }> {
+  return request<{ minutos: number; dias: number; monto: number }>(
+    `/ingresos/estimar${queryString(params)}`,
+  )
+}
+
 export function crearIngreso(datos: IngresoPayload): Promise<{ data: IngresoResumen }> {
   return request<{ data: IngresoResumen }>('/ingresos', {
     method: 'POST',

@@ -8,6 +8,8 @@ use App\Http\Resources\IngresoResource;
 use App\Models\Cliente;
 use App\Models\Ingreso;
 use App\Models\Vehiculo;
+use App\Services\TarifaService;
+use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -18,6 +20,35 @@ class IngresoController extends Controller
     /**
      * Ingresos activos (sin fecha de término) con monto proyectado.
      */
+    /**
+     * Estimación de días y monto antes de registrar el ingreso.
+     */
+    public function estimar(Request $request): JsonResponse
+    {
+        $datos = $request->validate([
+            'tipo' => ['nullable', 'string', 'max:15'],
+            'servicio' => ['nullable', 'string', 'max:25'],
+            'fechaInicio' => ['required', 'date'],
+            'horaInicio' => ['required', 'date_format:H:i'],
+            'fechaRegreso' => ['nullable', 'date'],
+            'horaRegreso' => ['nullable', 'date_format:H:i'],
+        ]);
+
+        $inicio = Carbon::parse($datos['fechaInicio'].' '.$datos['horaInicio']);
+        $fin = ! empty($datos['fechaRegreso'])
+            ? Carbon::parse($datos['fechaRegreso'].' '.($datos['horaRegreso'] ?? '00:00'))
+            : now();
+
+        $minutos = max(1, (int) ceil($inicio->diffInMinutes($fin, true)));
+        $dias = TarifaService::diasCobrables($minutos);
+
+        return response()->json([
+            'minutos' => $minutos,
+            'dias' => $dias,
+            'monto' => TarifaService::total($minutos, $datos['tipo'] ?? null, $datos['servicio'] ?? null),
+        ]);
+    }
+
     public function index(): JsonResponse
     {
         $ingresos = Ingreso::with([
