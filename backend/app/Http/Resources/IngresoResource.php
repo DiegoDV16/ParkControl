@@ -17,7 +17,9 @@ class IngresoResource extends JsonResource
         $inicio = Carbon::parse($this->fechaInicio.' '.$this->horaInicio);
         $fin = $this->fechaTermino
             ? Carbon::parse($this->fechaTermino.' '.$this->horaTermino)
-            : now();
+            : ($this->fechaRegreso
+                ? Carbon::parse($this->fechaRegreso.' '.($this->horaRegreso ?? '00:00'))
+                : now());
 
         $minutos = max(1, (int) ceil($inicio->diffInMinutes($fin, true)));
         $dias = TarifaService::diasCobrables($minutos);

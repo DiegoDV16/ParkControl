@@ -26,6 +26,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
 
     Route::get('/catalogos', [CatalogoController::class, 'index']);
     Route::get('/ingresos', [IngresoController::class, 'index']);
+    Route::get('/ingresos/estimar', [IngresoController::class, 'estimar']);
     Route::get('/ingresos/{ingreso}', [IngresoController::class, 'show']);
 });
 
