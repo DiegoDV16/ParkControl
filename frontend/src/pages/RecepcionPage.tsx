@@ -1,11 +1,16 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
+import { CobroModal } from '../components/CobroModal'
+import { FotosVehiculo, type FotoPendiente } from '../components/inspeccion/FotosVehiculo'
 import {
   ApiError,
   crearIngreso,
+  estimarIngreso,
   listarFilas,
   listarIngresos,
   obtenerCatalogos,
+  subirFotoInspeccion,
 } from '../lib/api'
 import type { Catalogos, Fila, IngresoResumen } from '../types'
 
@@ -26,6 +31,16 @@ function fechaHoy(): string {
 
 function horaAhora(): string {
   return new Date().toTimeString().slice(0, 5)
+}
+
+function normalizarRut(valor: string): string {
+  const limpio = valor.replace(/[^0-9kK]/g, '').toUpperCase()
+  if (limpio.length < 2) return limpio
+
+  const cuerpo = limpio.slice(0, -1)
+  const dv = limpio.slice(-1)
+
+  return `${cuerpo.replace(/\B(?=(\d{3})+(?!\d))/g, '.')}-${dv}`
 }
 
 function formularioInicial() {
@@ -54,6 +69,7 @@ function formularioInicial() {
 
 export function RecepcionPage() {
   const { usuario } = useAuth()
+  const navegar = useNavigate()
   const esJefatura = usuario?.idRol === 3
 
   const [catalogos, setCatalogos] = useState<Catalogos | null>(null)
@@ -64,6 +80,10 @@ export function RecepcionPage() {
   const [ok, setOk] = useState<string | null>(null)
   const [enviando, setEnviando] = useState(false)
   const [form, setForm] = useState(formularioInicial())
+  const [estimacion, setEstimacion] = useState<{ dias: number; monto: number } | null>(null)
+  const [cobro, setCobro] = useState<IngresoResumen | null>(null)
+  const [fotos, setFotos] = useState<FotoPendiente[]>([])
+  const [abrirFotos, setAbrirFotos] = useState(false)
 
   const cargar = useCallback(async () => {
     setCargando(true)
@@ -89,6 +109,43 @@ export function RecepcionPage() {
     void cargar()
   }, [cargar])
 
+  useEffect(() => {
+    if (!form.idTipoVehiculo || !catalogos) {
+      setEstimacion(null)
+      return
+    }
+
+    const tipo = catalogos.tipos.find(
+      (item) => String(item.idTipoVehiculo) === form.idTipoVehiculo,
+    )?.tipoVehiculo
+    const servicio = catalogos.servicios.find(
+      (item) => String(item.idServicioExtra) === form.idServicioExtra,
+    )?.servicioExtra
+
+    const temporizador = window.setTimeout(() => {
+      estimarIngreso({
+        tipo,
+        servicio,
+        fechaInicio: form.fechaInicio,
+        horaInicio: form.horaInicio,
+        fechaRegreso: form.fechaRegreso || undefined,
+        horaRegreso: form.horaRegreso || undefined,
+      })
+        .then((respuesta) => setEstimacion({ dias: respuesta.dias, monto: respuesta.monto }))
+        .catch(() => setEstimacion(null))
+    }, 350)
+
+    return () => window.clearTimeout(temporizador)
+  }, [
+    catalogos,
+    form.idTipoVehiculo,
+    form.idServicioExtra,
+    form.fechaInicio,
+    form.horaInicio,
+    form.fechaRegreso,
+    form.horaRegreso,
+  ])
+
   function campo<K extends keyof ReturnType<typeof formularioInicial>>(
     nombre: K,
     valor: ReturnType<typeof formularioInicial>[K],
@@ -101,6 +158,30 @@ export function RecepcionPage() {
   const servicioSeleccionado = catalogos?.servicios.find(
     (servicio) => String(servicio.idServicioExtra) === form.idServicioExtra,
   )
+
+  function agregarFotos(archivos: File[]) {
+    const nuevas = archivos.map((archivo) => ({
+      id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      archivo,
+      url: URL.createObjectURL(archivo),
+    }))
+    setFotos((previas) => [...previas, ...nuevas])
+  }
+
+  function quitarFoto(id: string) {
+    setFotos((previas) => {
+      const foto = previas.find((item) => item.id === id)
+      if (foto) URL.revokeObjectURL(foto.url)
+      return previas.filter((item) => item.id !== id)
+    })
+  }
+
+  function limpiarFotos() {
+    setFotos((previas) => {
+      previas.forEach((foto) => URL.revokeObjectURL(foto.url))
+      return []
+    })
+  }
 
   async function enviar(evento: FormEvent<HTMLFormElement>) {
     evento.preventDefault()
@@ -130,9 +211,26 @@ export function RecepcionPage() {
         observacion: form.observacion.trim() || null,
       })
 
+      let aviso = ''
+      if (fotos.length > 0) {
+        let subidas = 0
+        for (const foto of fotos) {
+          try {
+            await subirFotoInspeccion(respuesta.data.idIngreso, foto.archivo)
+            subidas += 1
+          } catch {
+            // Se informa al final cuántas fotografías se guardaron.
+          }
+        }
+        aviso = subidas === fotos.length
+          ? ` ${subidas} fotografía(s) guardada(s).`
+          : ` Se guardaron ${subidas} de ${fotos.length} fotografías.`
+        limpiarFotos()
+      }
+
       setOk(
         `Ingreso #${respuesta.data.idIngreso} registrado para ${respuesta.data.vehiculo.patente} `
-        + `en la fila ${respuesta.data.fila}. Monto proyectado: $${respuesta.data.montoProyectado.toLocaleString('es-CL')}.`,
+        + `en la fila ${respuesta.data.fila}. Monto proyectado: $${respuesta.data.montoProyectado.toLocaleString('es-CL')}.${aviso}`,
       )
       setForm(formularioInicial())
       await cargar()
@@ -175,7 +273,8 @@ export function RecepcionPage() {
               <div>
                 <label htmlFor="rRut" className="pc-label">RUT *</label>
                 <input id="rRut" className="pc-input" maxLength={13} required value={form.rut}
-                  onChange={(evento) => campo('rut', evento.target.value)} placeholder="12.345.678-9" />
+                  onChange={(evento) => campo('rut', evento.target.value)}
+                  onBlur={() => campo('rut', normalizarRut(form.rut))} placeholder="12.345.678-9" />
               </div>
               <div>
                 <label htmlFor="rNombres" className="pc-label">Nombres *</label>
@@ -211,7 +310,7 @@ export function RecepcionPage() {
               <div>
                 <label htmlFor="rPatente" className="pc-label">Patente *</label>
                 <input id="rPatente" className="pc-input text-uppercase" maxLength={7} required value={form.patente}
-                  onChange={(evento) => campo('patente', evento.target.value)} placeholder="BBBB12" />
+                  onChange={(evento) => campo('patente', evento.target.value.toUpperCase())} placeholder="BBBB12" />
               </div>
               <div>
                 <label htmlFor="rMarca" className="pc-label">Marca *</label>
@@ -324,7 +423,35 @@ export function RecepcionPage() {
             )}
           </section>
 
-          <div className="flex justify-end border-t border-pc-border pt-4">
+          <div className="flex flex-wrap items-center gap-3 rounded-lg border border-pc-border bg-pc-panel2/40 px-4 py-3">
+            <button type="button" className="pc-btn-ghost" onClick={() => setAbrirFotos(true)}>
+              Fotografías del vehículo
+            </button>
+            <span className="text-xs text-pc-muted">
+              {fotos.length > 0
+                ? `${fotos.length} fotografía(s) pendiente(s) de guardar.`
+                : 'Toma fotos del estado del vehículo antes de registrar; se suben con el ingreso.'}
+            </span>
+          </div>
+          <div className="text-sm">
+            {estimacion ? (
+              <>
+                Estimación: <strong>{estimacion.dias} día(s)</strong> ·{' '}
+                <strong className="text-pc-mint">${estimacion.monto.toLocaleString('es-CL')}</strong>
+              </>
+            ) : (
+              <span className="text-pc-muted">Selecciona tipo de vehículo y fechas para estimar.</span>
+            )}
+          </div>
+          <div className="flex justify-end gap-2 border-t border-pc-border pt-4">
+            <button
+              type="button"
+              className="pc-btn-ghost"
+              onClick={() => { setForm(formularioInicial()); setEstimacion(null); limpiarFotos() }}
+              disabled={enviando}
+            >
+              Limpiar
+            </button>
             <button type="submit" className="pc-btn-primary" disabled={enviando}>
               {enviando ? 'Registrando…' : 'Registrar ingreso'}
             </button>
@@ -380,7 +507,23 @@ export function RecepcionPage() {
                   <td className="px-4 py-3 text-xs">{ingreso.servicio ?? 'Sin servicio'}</td>
                   <td className="px-4 py-3">{ingreso.dias}</td>
                   <td className="px-4 py-3 text-right font-semibold">
-                    ${ingreso.montoProyectado.toLocaleString('es-CL')}
+                    <div>${ingreso.montoProyectado.toLocaleString('es-CL')}</div>
+                    <button
+                      type="button"
+                      className="pc-btn-ghost mt-1 px-2 text-xs"
+                      onClick={() => navegar(`/inspeccion?ingreso=${ingreso.idIngreso}`)}
+                    >
+                      Fotos
+                    </button>
+                    {!esJefatura && (
+                      <button
+                        type="button"
+                        className="pc-btn-ghost mt-1 px-2 text-xs"
+                        onClick={() => setCobro(ingreso)}
+                      >
+                        Cobrar
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -390,8 +533,51 @@ export function RecepcionPage() {
       </section>
 
       <p className="text-xs text-pc-muted">
-        La salida y el cobro se implementan en la siguiente fase. La inspección de daños en canvas queda pendiente.
+        Las fotografías se toman desde el formulario o con el botón Fotos. El cobro registra la
+        llegada real y libera la fila.
       </p>
+
+      {cobro && (
+        <CobroModal
+          ingreso={cobro}
+          onCerrar={() => setCobro(null)}
+          onCobrado={(mensaje) => {
+            setCobro(null)
+            setOk(mensaje)
+            void cargar()
+          }}
+        />
+      )}
+
+      {abrirFotos && (
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-pc-bg">
+          <div className="mx-auto w-full max-w-4xl px-4 py-5">
+            <div className="mb-4 flex items-start justify-between gap-3">
+              <div>
+                <h2 className="text-lg font-bold">Fotografías del vehículo</h2>
+                <p className="text-sm text-pc-muted">
+                  Toma fotos del estado actual; se subirán al registrar el ingreso.
+                </p>
+              </div>
+              <button
+                type="button"
+                className="pc-btn-ghost"
+                onClick={() => setAbrirFotos(false)}
+              >
+                Cerrar ✕
+              </button>
+            </div>
+
+            <FotosVehiculo
+              fotos={[]}
+              pendientes={fotos}
+              onAgregar={agregarFotos}
+              onQuitarPendiente={quitarFoto}
+              nota="Máximo 8 MB por fotografía. Se guardan en el servidor al confirmar el ingreso."
+            />
+          </div>
+        </div>
+      )}
     </div>
   )
 }

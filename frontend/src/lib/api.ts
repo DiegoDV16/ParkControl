@@ -1,12 +1,16 @@
 import type {
   Catalogos,
+  CobroPayload,
+  Danio,
   Fila,
+  FotoInspeccion,
   IngresoPayload,
   IngresoResumen,
   LoginResponse,
   Paginated,
   PerfilPayload,
   PerfilResponse,
+  PreviewCobro,
   Rol,
   Usuario,
   UsuarioPayload,
@@ -175,11 +179,160 @@ export function listarIngresos(): Promise<Paginated<IngresoResumen>> {
   return request<Paginated<IngresoResumen>>('/ingresos')
 }
 
+export function estimarIngreso(params: {
+  tipo?: string
+  servicio?: string
+  fechaInicio: string
+  horaInicio: string
+  fechaRegreso?: string
+  horaRegreso?: string
+}): Promise<{ minutos: number; dias: number; monto: number }> {
+  return request<{ minutos: number; dias: number; monto: number }>(
+    `/ingresos/estimar${queryString(params)}`,
+  )
+}
+
 export function crearIngreso(datos: IngresoPayload): Promise<{ data: IngresoResumen }> {
   return request<{ data: IngresoResumen }>('/ingresos', {
     method: 'POST',
     body: JSON.stringify(datos),
   })
+}
+
+export function previsualizarCobro(
+  id: number,
+  fechaRegreso: string,
+  horaRegreso: string,
+): Promise<PreviewCobro> {
+  return request<PreviewCobro>(
+    `/ingresos/${id}/preview${queryString({ fechaRegreso, horaRegreso })}`,
+  )
+}
+
+export function cobrarIngreso(
+  id: number,
+  datos: CobroPayload,
+): Promise<{ message: string; data: IngresoResumen; pago: { monto: number; vuelto: number | null; metodo: string } }> {
+  return request(`/ingresos/${id}/cobrar`, {
+    method: 'POST',
+    body: JSON.stringify(datos),
+  })
+}
+
+export function listarDanios(idIngreso: number): Promise<{ data: Danio[] }> {
+  return request<{ data: Danio[] }>(`/ingresos/${idIngreso}/danios`)
+}
+
+export function crearDanio(
+  idIngreso: number,
+  datos: { vista: string; coordX: number; coordY: number; tipoDanio: string; detalle?: string | null },
+): Promise<{ data: Danio }> {
+  return request<{ data: Danio }>(`/ingresos/${idIngreso}/danios`, {
+    method: 'POST',
+    body: JSON.stringify(datos),
+  })
+}
+
+export function actualizarDanio(
+  idDanio: number,
+  datos: Partial<{ vista: string; coordX: number; coordY: number; tipoDanio: string; detalle: string | null }>,
+): Promise<{ data: Danio }> {
+  return request<{ data: Danio }>(`/danios/${idDanio}`, {
+    method: 'PUT',
+    body: JSON.stringify(datos),
+  })
+}
+
+export function eliminarDanio(idDanio: number): Promise<{ message: string }> {
+  return request<{ message: string }>(`/danios/${idDanio}`, { method: 'DELETE' })
+}
+
+export async function subirInspeccion(
+  idIngreso: number,
+  imagen: Blob,
+  sinDanios: boolean,
+): Promise<{ message: string; url: string; ruta: string }> {
+  const formulario = new FormData()
+  formulario.append('imagen', imagen, `inspeccion-${idIngreso}.webp`)
+  formulario.append('sinDanios', sinDanios ? '1' : '0')
+
+  const cabeceras: Record<string, string> = { Accept: 'application/json' }
+  const token = getToken()
+  if (token) cabeceras.Authorization = `Bearer ${token}`
+
+  let respuesta: Response
+  try {
+    respuesta = await fetch(`${API_URL}/ingresos/${idIngreso}/inspeccion`, {
+      method: 'POST',
+      headers: cabeceras,
+      body: formulario,
+    })
+  } catch {
+    throw new ApiError(0, 'No se pudo conectar con el servidor.')
+  }
+
+  const texto = await respuesta.text()
+  let datos: { message?: string; url?: string; ruta?: string } = {}
+  if (texto) {
+    try {
+      datos = JSON.parse(texto) as typeof datos
+    } catch {
+      datos = {}
+    }
+  }
+
+  if (!respuesta.ok) {
+    throw new ApiError(respuesta.status, datos.message ?? 'No se pudo guardar la inspección.')
+  }
+
+  return {
+    message: datos.message ?? 'Inspección guardada.',
+    url: datos.url ?? '',
+    ruta: datos.ruta ?? '',
+  }
+}
+
+export async function subirFotoInspeccion(
+  idIngreso: number,
+  imagen: File,
+): Promise<{ data: FotoInspeccion }> {
+  const formulario = new FormData()
+  formulario.append('imagen', imagen, imagen.name || 'foto.jpg')
+
+  const cabeceras: Record<string, string> = { Accept: 'application/json' }
+  const token = getToken()
+  if (token) cabeceras.Authorization = `Bearer ${token}`
+
+  let respuesta: Response
+  try {
+    respuesta = await fetch(`${API_URL}/ingresos/${idIngreso}/fotos`, {
+      method: 'POST',
+      headers: cabeceras,
+      body: formulario,
+    })
+  } catch {
+    throw new ApiError(0, 'No se pudo conectar con el servidor.')
+  }
+
+  const texto = await respuesta.text()
+  let datos: { message?: string; data?: FotoInspeccion } = {}
+  if (texto) {
+    try {
+      datos = JSON.parse(texto) as typeof datos
+    } catch {
+      datos = {}
+    }
+  }
+
+  if (!respuesta.ok || !datos.data) {
+    throw new ApiError(respuesta.status, datos.message ?? 'No se pudo subir la fotografía.')
+  }
+
+  return { data: datos.data }
+}
+
+export function eliminarFotoInspeccion(idFoto: number): Promise<{ message: string }> {
+  return request<{ message: string }>(`/inspeccion-fotos/${idFoto}`, { method: 'DELETE' })
 }
 
 export function eliminarUsuario(id: number, forzar = false): Promise<{ message: string }> {

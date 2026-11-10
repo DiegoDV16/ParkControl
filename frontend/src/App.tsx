@@ -4,6 +4,7 @@ import { AppLayout } from './layouts/AppLayout'
 import { DashboardPage } from './pages/DashboardPage'
 import { FilasPage } from './pages/FilasPage'
 import { ForbiddenPage } from './pages/ForbiddenPage'
+import { InspeccionPage } from './pages/InspeccionPage'
 import { LoginPage } from './pages/LoginPage'
 import { PerfilPage } from './pages/PerfilPage'
 import { RecepcionPage } from './pages/RecepcionPage'
@@ -22,6 +23,7 @@ export default function App() {
 
           <Route element={<ProtectedRoute roles={[1, 2]} />}>
             <Route path="recepcion" element={<RecepcionPage />} />
+            <Route path="inspeccion" element={<InspeccionPage />} />
           </Route>
 
           <Route element={<ProtectedRoute roles={[1]} />}>

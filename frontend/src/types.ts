@@ -80,6 +80,27 @@ export interface Catalogos {
   tipos: TipoVehiculoCatalogo[]
 }
 
+export type VistaDanio =
+  | 'superior'
+  | 'lateral_izquierda'
+  | 'lateral_derecha'
+  | 'frontal'
+  | 'trasera'
+
+export interface Danio {
+  idDanio: number
+  vista: VistaDanio
+  coordX: number
+  coordY: number
+  tipoDanio: string
+  detalle: string | null
+}
+
+export interface FotoInspeccion {
+  idFoto: number
+  url: string
+}
+
 export interface IngresoResumen {
   idIngreso: number
   estado: string
@@ -95,6 +116,10 @@ export interface IngresoResumen {
   servicio: string | null
   dias: number
   montoProyectado: number
+  danios?: Danio[]
+  inspeccionUrl?: string | null
+  inspeccionSinDanios?: boolean
+  inspeccionFotos?: FotoInspeccion[]
 }
 
 export interface IngresoPayload {
@@ -116,6 +141,19 @@ export interface IngresoPayload {
   numeroVuelo?: string | null
   llaves: number
   observacion?: string | null
+}
+
+export interface PreviewCobro {
+  minutos: number
+  dias: number
+  monto: number
+}
+
+export interface CobroPayload {
+  fechaRegreso: string
+  horaRegreso: string
+  metodo: 'debito' | 'credito' | 'transferencia'
+  referencia?: string | null
 }
 
 export interface UsuarioPayload {

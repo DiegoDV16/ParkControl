@@ -15,9 +15,14 @@ class IngresoResource extends JsonResource
     public function toArray(Request $request): array
     {
         $inicio = Carbon::parse($this->fechaInicio.' '.$this->horaInicio);
+        $horaTermino = (string) $this->horaTermino;
         $fin = $this->fechaTermino
-            ? Carbon::parse($this->fechaTermino.' '.$this->horaTermino)
-            : now();
+            ? (strlen($horaTermino) > 8
+                ? Carbon::parse($horaTermino)
+                : Carbon::parse($this->fechaTermino.' '.$horaTermino))
+            : ($this->fechaRegreso
+                ? Carbon::parse($this->fechaRegreso.' '.($this->horaRegreso ?? '00:00'))
+                : now());
 
         $minutos = max(1, (int) ceil($inicio->diffInMinutes($fin, true)));
         $dias = TarifaService::diasCobrables($minutos);
@@ -26,7 +31,9 @@ class IngresoResource extends JsonResource
         $servicioNombre = $this->servicio?->servicioExtra;
         $monto = $this->estado === 'anulado'
             ? 0
-            : TarifaService::total($minutos, $tipo, $servicioNombre);
+            : ($this->estado === 'cerrado' && $this->montoTotal !== null
+                ? (float) $this->montoTotal
+                : TarifaService::total($minutos, $tipo, $servicioNombre));
 
         return [
             'idIngreso' => (int) $this->idIngreso,
@@ -62,6 +69,22 @@ class IngresoResource extends JsonResource
             'minutos' => $minutos,
             'dias' => $dias,
             'montoProyectado' => $monto,
+            'danios' => $this->whenLoaded('danios', fn () => $this->danios->map(fn ($danio) => [
+                'idDanio' => (int) $danio->idDanio,
+                'vista' => $danio->vista,
+                'coordX' => (float) $danio->coordX,
+                'coordY' => (float) $danio->coordY,
+                'tipoDanio' => $danio->tipoDanio,
+                'detalle' => $danio->detalle,
+            ])->values()),
+            'inspeccionUrl' => $this->inspeccionRuta
+                ? $request->getSchemeAndHttpHost().'/storage/'.$this->inspeccionRuta
+                : null,
+            'inspeccionSinDanios' => (bool) $this->inspeccionSinDanios,
+            'inspeccionFotos' => $this->whenLoaded('fotos', fn () => $this->fotos->map(fn ($foto) => [
+                'idFoto' => (int) $foto->idFoto,
+                'url' => $request->getSchemeAndHttpHost().'/storage/'.$foto->ruta,
+            ])->values()),
         ];
     }
 }
