@@ -156,6 +156,40 @@ export interface CobroPayload {
   referencia?: string | null
 }
 
+export interface VueloResumen {
+  idIngreso: number
+  patente: string | null
+  cliente: string
+  fila: string | null
+  numeroVuelo: string | null
+  fechaRegreso: string | null
+  horaRegreso: string | null
+  estado: string
+  minutos: number | null
+}
+
+export interface JefaturaResumen {
+  kpis: {
+    activos: number
+    capacidad: number
+    ocupadas: number
+    libres: number
+    ocupacionPorcentaje: number
+    recaudacionHoy: number
+    recaudacionMes: number
+    ingresosHoy: number
+    llegadasProximas: number
+  }
+  filas: Fila[]
+  estadias: IngresoResumen[]
+  vuelos: VueloResumen[]
+  recaudacion: {
+    hoy: number
+    mes: number
+    porMetodo: Array<{ metodo: string; total: number }>
+  }
+}
+
 export interface UsuarioPayload {
   idRol: number
   rut: string

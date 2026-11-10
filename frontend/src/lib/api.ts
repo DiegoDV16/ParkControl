@@ -6,6 +6,7 @@ import type {
   FotoInspeccion,
   IngresoPayload,
   IngresoResumen,
+  JefaturaResumen,
   LoginResponse,
   Paginated,
   PerfilPayload,
@@ -333,6 +334,10 @@ export async function subirFotoInspeccion(
 
 export function eliminarFotoInspeccion(idFoto: number): Promise<{ message: string }> {
   return request<{ message: string }>(`/inspeccion-fotos/${idFoto}`, { method: 'DELETE' })
+}
+
+export function obtenerResumenJefatura(): Promise<JefaturaResumen> {
+  return request<JefaturaResumen>('/jefatura/resumen')
 }
 
 export function eliminarUsuario(id: number, forzar = false): Promise<{ message: string }> {

@@ -21,7 +21,7 @@ const menu = [
   { clave: 'inspeccion', texto: 'Inspección vehicular', ruta: '/inspeccion', disponible: true },
   { clave: 'filas', texto: 'Filas y ocupación', ruta: '/filas', disponible: true },
   { clave: 'clientes', texto: 'Clientes', ruta: '/clientes', disponible: false },
-  { clave: 'reportes', texto: 'Supervisión', ruta: '/reportes', disponible: false },
+  { clave: 'reportes', texto: 'Supervisión & KPIs', ruta: '/jefatura', disponible: true },
   { clave: 'perfil', texto: 'Mi perfil', ruta: '/perfil', disponible: true },
   { clave: 'config', texto: 'Configuración', ruta: '/configuracion', disponible: false },
 ]
@@ -53,6 +53,7 @@ export function AppLayout() {
         .filter((item) => item.clave !== 'usuarios' || usuario?.idRol === 1)
         .filter((item) => item.clave !== 'recepcion' || usuario?.idRol !== 3)
         .filter((item) => item.clave !== 'inspeccion' || usuario?.idRol === 1 || usuario?.idRol === 2)
+        .filter((item) => item.clave !== 'reportes' || usuario?.idRol !== 2)
         .map((item) =>
         item.disponible ? (
           <NavLink
