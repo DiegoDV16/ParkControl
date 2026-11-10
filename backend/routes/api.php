@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\FilaController;
 use App\Http\Controllers\Api\FotoInspeccionController;
 use App\Http\Controllers\Api\IngresoController;
 use App\Http\Controllers\Api\InspeccionController;
+use App\Http\Controllers\Api\JefaturaController;
 use App\Http\Controllers\Api\PerfilController;
 use App\Http\Controllers\Api\RolController;
 use App\Http\Controllers\Api\UsuarioController;
@@ -45,6 +46,10 @@ Route::middleware(['auth:sanctum', 'role:ADMINISTRADOR,OPERADOR'])->group(functi
     Route::post('/ingresos/{ingreso}/danios', [DanioController::class, 'store']);
     Route::put('/danios/{danio}', [DanioController::class, 'update']);
     Route::delete('/danios/{danio}', [DanioController::class, 'destroy']);
+});
+
+Route::middleware(['auth:sanctum', 'role:ADMINISTRADOR,JEFATURA'])->group(function (): void {
+    Route::get('/jefatura/resumen', [JefaturaController::class, 'resumen']);
 });
 
 Route::middleware(['auth:sanctum', 'role:ADMINISTRADOR'])->group(function (): void {

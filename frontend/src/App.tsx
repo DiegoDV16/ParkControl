@@ -5,6 +5,7 @@ import { DashboardPage } from './pages/DashboardPage'
 import { FilasPage } from './pages/FilasPage'
 import { ForbiddenPage } from './pages/ForbiddenPage'
 import { InspeccionPage } from './pages/InspeccionPage'
+import { JefaturaPage } from './pages/JefaturaPage'
 import { LoginPage } from './pages/LoginPage'
 import { PerfilPage } from './pages/PerfilPage'
 import { RecepcionPage } from './pages/RecepcionPage'
@@ -28,6 +29,10 @@ export default function App() {
 
           <Route element={<ProtectedRoute roles={[1]} />}>
             <Route path="usuarios" element={<UsuariosPage />} />
+          </Route>
+
+          <Route element={<ProtectedRoute roles={[1, 3]} />}>
+            <Route path="jefatura" element={<JefaturaPage />} />
           </Route>
         </Route>
       </Route>
