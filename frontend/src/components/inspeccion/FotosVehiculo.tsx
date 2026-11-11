@@ -1,5 +1,6 @@
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
 import type { FotoInspeccion } from '../../types'
+import { CamaraFoto } from './CamaraFoto'
 
 export interface FotoPendiente {
   id: string
@@ -29,6 +30,7 @@ export function FotosVehiculo({
   nota,
 }: Props) {
   const entrada = useRef<HTMLInputElement>(null)
+  const [camaraAbierta, setCamaraAbierta] = useState(false)
   const total = fotos.length + pendientes.length
 
   return (
@@ -42,12 +44,11 @@ export function FotosVehiculo({
         </div>
 
         {!soloLectura && (
-          <div>
+          <div className="flex flex-wrap gap-2">
             <input
               ref={entrada}
               type="file"
               accept="image/*"
-              capture="environment"
               multiple
               className="hidden"
               onChange={(evento) => {
@@ -60,9 +61,17 @@ export function FotosVehiculo({
               type="button"
               className="pc-btn-primary"
               disabled={guardando}
+              onClick={() => setCamaraAbierta(true)}
+            >
+              Tomar foto
+            </button>
+            <button
+              type="button"
+              className="pc-btn-ghost"
+              disabled={guardando}
               onClick={() => entrada.current?.click()}
             >
-              {guardando ? 'Subiendo…' : 'Tomar foto'}
+              Subir archivo
             </button>
           </div>
         )}
@@ -110,6 +119,15 @@ export function FotosVehiculo({
           ))}
         </div>
       )}
+
+      <CamaraFoto
+        abierto={camaraAbierta}
+        onCerrar={() => setCamaraAbierta(false)}
+        onCapturar={(archivo) => {
+          onAgregar([archivo])
+          setCamaraAbierta(false)
+        }}
+      />
     </div>
   )
 }
